@@ -1,0 +1,525 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>JELIT MALL</title>
+    <meta name="keywords" content="ANKEN" />
+    <meta name="description" content="ANKEN" />
+    <meta name="MobileOptimized" content="1900" />
+    <meta name="viewport" content="width=1900" />
+    <script type="text/javascript" src="./themes/default/js/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="./themes/chartjs/Chart.bundle.js"></script>
+    <script type="text/javascript" src="./themes/chartjs/utils.js"></script>
+    <link href="./themes/nouislider/nouislider.css" rel="stylesheet" />
+    <script type="text/javascript" src="./themes/nouislider/nouislider.js"></script>
+    <script type="text/javascript" src="./themes/default/js/base.js"></script>
+    <link rel="stylesheet" type="text/css" href="./themes/default/base.css" />
+    <script type="text/javascript" src="./themes/mei/script.js"></script>
+</head>
+
+<body>
+    <div class="framecontent">
+        <div class="headersection">
+            <div class="headerinner">
+                <div class="logoarea"><img src="./themes/default/images/logo.png" /></div>
+                <div class="menuarea">
+                    <div class="normalpercent">
+                        <div class="menuleftcontent">
+                            <div class="searchselection">
+                                <div class="search_title">Location</div>
+                                <div class="search_location">
+                                    <select name="search_location" id="location">
+                                        <option value="">Loading...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="searchselection">
+                                <div class="search_title">Start Date</div>
+                                <div class="search_date">
+                                    <input name="search_date" type="date" id="startDate" />
+                                </div>
+                            </div>
+                            <div class="searchselection">
+                                <div class="search_title">End Date</div>
+                                <div class="search_date">
+                                    <input name="search_date" type="date" id="endDate" />
+                                </div>
+                            </div>
+                            <div class="searchselection">
+                                <div class="search_title">Compare Start Date</div>
+                                <div class="search_date">
+                                    <input name="search_date" type="date" id="refStartDate" />
+                                </div>
+                            </div>
+                            <div class="searchselection">
+                                <div class="search_title">Compare End Date</div>
+                                <div class="search_date">
+                                    <input name="search_date" type="date" id="refEndDate" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="totalareafenbu">
+            <div class="totalarea">
+                <div class="innercontent">
+                    <div class="leftarea">
+                        <div class="summaryarea">
+                            <div class="bigtextshow">
+                                <div class="text_total_name">Total</div>
+                                <div class="text_total_val" id="part1-total">1000</div>
+                                <div class="compare_name">Comparison</div>
+                                <div class="compare_content">
+                                    <div class="compare_val" id="part1-compare">500</div>
+                                    <div class="compare_percent" id="part1-change">100%</div>
+                                    <img class="compare_up"
+                                        src="./themes/default/images/icon_sanjiaoxing_top_green.png" />
+                                </div>
+                            </div>
+                            <div class="bigpictureshow">&nbsp;</div>
+                            <div class="big_peakperiod">Peak Period: <br><span id="part2-peak">2000/1/1 0:00:00~0:59:59,
+                                    1000 pax</span>
+                            </div>
+                            <div class="big_lowperiod">Low Period: <br><span id="part2-low">2000/1/1 0:00:00~0:59:59, 1
+                                    pax</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rightarea">
+                        <div class="tablearea">
+                            <div class="tablebox">
+                                <div class="subitem">
+                                    <div class="subitem_left">
+                                        <div class="table_name">A6</div>
+                                        <div class="table_num" id="part3-total">100</div>
+                                    </div>
+                                    <div class="subitem_right">
+                                        <div class="grouplist">
+                                            <div class="thirditem"><img src="./themes/default/images/gender_male.png" />
+                                                <div class="third_name" id="part3-male">60%</div>
+                                            </div>
+                                            <div class="thirditem"><img
+                                                    src="./themes/default/images/gender_female.png" />
+                                                <div class="third_name" id="part3-female">20%</div>
+                                            </div>
+                                        </div>
+                                        <div class="grouplist">
+                                            <div class="thirditem"><img
+                                                    src="./themes/default/images/gender_child.png" />
+                                                <div class="third_name" id="part3-children">25%</div>
+                                            </div>
+                                            <div class="thirditem"><img
+                                                    src="./themes/default/images/gender_unknown.png" />
+                                                <div class="third_name" id="part3-unknown">5%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="subitem_peakperiod">Peak Period: <br><span class="valcolor"
+                                            id="part3-peak">2000/1/1 0:00:00~0:59:59, 1000 pax</span></div>
+                                    <div class="subitem_lowperiod"><br>Low Period: <br><span class="valcolor"
+                                            id="part3-low">2000/1/1 0:00:00~0:59:59, 1 pax</span></div>
+                                </div>
+                            </div>
+                            <div class="tablebox">
+                                <div class="subitem">
+                                    <div class="subitem_left">
+                                        <div class="table_name">A2</div>
+                                        <div class="table_num" id="part4-total">2000</div>
+                                    </div>
+                                    <div class="subitem_right">
+                                        <div class="grouplist">
+                                            <div class="thirditem"><img src="./themes/default/images/gender_male.png" />
+                                                <div class="third_name" id="part4-male">75%</div>
+                                            </div>
+                                            <div class="thirditem"><img
+                                                    src="./themes/default/images/gender_female.png" />
+                                                <div class="third_name" id="part4-female">15%</div>
+                                            </div>
+                                        </div>
+                                        <div class="grouplist">
+                                            <div class="thirditem"><img
+                                                    src="./themes/default/images/gender_child.png" />
+                                                <div class="third_name" id="part4-children">8%</div>
+                                            </div>
+                                            <div class="thirditem"><img
+                                                    src="./themes/default/images/gender_unknown.png" />
+                                                <div class="third_name" id="part4-unknown">2%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="subitem_peakperiod">Peak Period: <br><span class="valcolor"
+                                            id="part4-peak">2025/8/1
+                                            1:00:00~1:59:59, 12 pax</span></div>
+                                    <div class="subitem_lowperiod"><br>Low Period: <br><span class="valcolor"
+                                            id="part4-low">2025/8/1
+                                            3:00:00~3:59:59, 5 pax</span></div>
+                                </div>
+                            </div>
+                            <div class="tablebox">
+                                <div class="subitem">
+                                    <div class="subitem_left">
+                                        <div class="table_name">A3</div>
+                                        <div class="table_num" id="part5-total">1500</div>
+                                    </div>
+                                    <div class="subitem_right">
+                                        <div class="grouplist">
+                                            <div class="thirditem"><img src="./themes/default/images/gender_male.png" />
+                                                <div class="third_name" id="part5-male">50%</div>
+                                            </div>
+                                            <div class="thirditem"><img
+                                                    src="./themes/default/images/gender_female.png" />
+                                                <div class="third_name" id="part5-female">27%</div>
+                                            </div>
+                                        </div>
+                                        <div class="grouplist">
+                                            <div class="thirditem"><img
+                                                    src="./themes/default/images/gender_child.png" />
+                                                <div class="third_name" id="part5-children">20%</div>
+                                            </div>
+                                            <div class="thirditem"><img
+                                                    src="./themes/default/images/gender_unknown.png" />
+                                                <div class="third_name" id="part5-unknown">3%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="subitem_peakperiod">Peak Period: <br><span class="valcolor"
+                                            id="part5-peak">2025/8/1
+                                            1:00:00~1:59:59, 12 pax</span></div>
+                                    <div class="subitem_lowperiod"><br>Low Period: <br><span class="valcolor"
+                                            id="part5-low">2025/8/1
+                                            3:00:00~3:59:59, 5 pax</span></div>
+                                </div>
+                            </div>
+                            <div class="tablebox">
+                                <div class="subitem">
+                                    <div class="subitem_left">
+                                        <div class="table_name">A4</div>
+                                        <div class="table_num" id="part6-total">500</div>
+                                    </div>
+                                    <div class="subitem_right">
+                                        <div class="grouplist">
+                                            <div class="thirditem"><img src="./themes/default/images/gender_male.png" />
+                                                <div class="third_name" id="part6-male">50%</div>
+                                            </div>
+                                            <div class="thirditem"><img
+                                                    src="./themes/default/images/gender_female.png" />
+                                                <div class="third_name" id="part6-female">27%</div>
+                                            </div>
+                                        </div>
+                                        <div class="grouplist">
+                                            <div class="thirditem"><img
+                                                    src="./themes/default/images/gender_child.png" />
+                                                <div class="third_name" id="part6-children">20%</div>
+                                            </div>
+                                            <div class="thirditem"><img
+                                                    src="./themes/default/images/gender_unknown.png" />
+                                                <div class="third_name" id="part6-unknown">3%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="subitem_peakperiod">Peak Period: <br><span class="valcolor"
+                                            id="part6-peak">2025/8/1
+                                            1:00:00~1:59:59, 12 pax</span></div>
+                                    <div class="subitem_lowperiod"><br>Low Period: <br><span class="valcolor"
+                                            id="part6-low">2025/8/1
+                                            3:00:00~3:59:59, 5 pax</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="importarea">
+                    <div class="subitem">
+                        <div class="subitem_left">
+                            <div class="table_name">Cold Storage</div>
+                            <div class="table_num table_num_1" id="part7-value">5800</div>
+                            <div class="comparison_title">Comparison</div>
+                            <div class="comparison_content">
+                                <div class="comparison_num" id="part7-comparison">200</div>
+                                <div class="comparison_percent" id="part7-change">190%</div><img class="comparison_up"
+                                    src="./themes/default/images/icon_sanjiaoxing_top_green.png" />
+                            </div>
+                        </div>
+                        <div class="subitem_right">
+                            <div class="canvas_box"><canvas id="canvas_1" style="width:100%;height:100%;"></canvas>
+                            </div>
+                            <div class="barshow_area">
+                                <div class="floatright">
+                                    <div class="fouritem">
+                                        <div class="item_tag_1_male"></div>
+                                        <div class="item_name_1_male">Male</div>
+                                    </div>
+                                    <div class="fouritem">
+                                        <div class="item_tag_1_female"></div>
+                                        <div class="item_name_1_female">Female</div>
+                                    </div>
+                                    <div class="fouritem">
+                                        <div class="item_tag_1_children"></div>
+                                        <div class="item_name_1_children">Unknown</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="subitem">
+                        <div class="subitem_left">
+                            <div class="table_name">A8</div>
+                            <div class="table_num" style="color:#13C4C4;" id="part8-value">5800</div>
+                            <div class="comparison_title">Comparison</div>
+                            <div class="comparison_content">
+                                <div class="comparison_num" id="part8-comparison">200</div>
+                                <div class="comparison_percent" id="part8-change">190%</div><img class="comparison_up"
+                                    src="./themes/default/images/icon_sanjiaoxing_top_green.png" />
+                            </div>
+                        </div>
+                        <div class="subitem_right">
+                            <div class="canvas_box"><canvas id="canvas_2" style="width:100%;height:100%;"></canvas>
+                            </div>
+                            <div class="barshow_area">
+                                <div class="floatright">
+                                    <div class="fouritem">
+                                        <div class="item_tag_2_male"></div>
+                                        <div class="item_name_2_male">Male</div>
+                                    </div>
+                                    <div class="fouritem">
+                                        <div class="item_tag_2_female"></div>
+                                        <div class="item_name_2_female">Female</div>
+                                    </div>
+                                    <div class="fouritem">
+                                        <div class="item_tag_2_children"></div>
+                                        <div class="item_name_2_children">Unknown</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="subitem">
+                        <div class="subitem_left">
+                            <div class="table_name">Canteen</div>
+                            <div class="table_num" style="color:#5D4EB5;" id="part9-value">500</div>
+                            <div class="comparison_title">Comparison</div>
+                            <div class="comparison_content">
+                                <div class="comparison_num" id="part9-comparison">200</div>
+                                <div class="comparison_percent" id="part9-change">190%</div><img class="comparison_up"
+                                    src="./themes/default/images/icon_sanjiaoxing_top_green.png" />
+                            </div>
+                        </div>
+                        <div class="subitem_right">
+                            <div class="canvas_box"><canvas id="canvas_3" style="width:100%;height:100%;"></canvas>
+                            </div>
+                            <div class="barshow_area">
+                                <div class="floatright">
+                                    <div class="fouritem">
+                                        <div class="item_tag_3_male"></div>
+                                        <div class="item_name_3_male">Male</div>
+                                    </div>
+                                    <div class="fouritem">
+                                        <div class="item_tag_3_female"></div>
+                                        <div class="item_name_3_female">Female</div>
+                                    </div>
+                                    <div class="fouritem">
+                                        <div class="item_tag_3_children"></div>
+                                        <div class="item_name_3_children">Unknown</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="subitem">
+                        <div class="subitem_left">
+                            <div class="table_name">2nd Floor</div>
+                            <div class="table_num" style="color:#24C4EF;" id="part10-value">800</div>
+                            <div class="comparison_title">Comparison</div>
+                            <div class="comparison_content">
+                                <div class="comparison_num" id="part10-comparison">200</div>
+                                <div class="comparison_percent" id="part10-change">190%</div><img class="comparison_up"
+                                    src="./themes/default/images/icon_sanjiaoxing_top_green.png" />
+                            </div>
+                        </div>
+                        <div class="subitem_right">
+                            <div class="canvas_box"><canvas id="canvas_4" style="width:100%;height:100%;"></canvas>
+                            </div>
+                            <div class="barshow_area">
+                                <div class="floatright">
+                                    <div class="fouritem">
+                                        <div class="item_tag_4_male"></div>
+                                        <div class="item_name_4_male">Male</div>
+                                    </div>
+                                    <div class="fouritem">
+                                        <div class="item_tag_4_female"></div>
+                                        <div class="item_name_4_female">Female</div>
+                                    </div>
+                                    <div class="fouritem">
+                                        <div class="item_tag_4_children"></div>
+                                        <div class="item_name_4_children">Unknown</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="genderbreakdownarea">
+                <div class="innercontent">
+                    <div class="area_title">Gender Breakdown</div>
+                    <div class="genderbreakdowncontent">
+                        <div class="list">
+                            <div class="clumn_name"><img src="./themes/default/images/gender_male.png" />
+                                <div class="text_name">Male</div>
+                            </div>
+                            <div class="clumn_value">
+                                <div class="value_green" id="part11-male">500</div>
+                            </div>
+                            <div class="clumn_percent">
+                                <div class="percentright">
+                                    <div class="value_green" id="part11-male-change">20%</div><img class="value_up"
+                                        src="./themes/default/images/icon_sanjiaoxing_top_green.png">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="list">
+                            <div class="clumn_name"><img src="./themes/default/images/gender_female.png" />
+                                <div class="text_name">Female</div>
+                            </div>
+                            <div class="clumn_value">
+                                <div class="value_pink" id="part11-female">200</div>
+                            </div>
+                            <div class="clumn_percent">
+                                <div class="percentright">
+                                    <div class="value_pink" id="part11-female-change">15%</div><img class="value_do"
+                                        src="./themes/default/images/icon_sanjiaoxing_bottom_red.png">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="list">
+                            <div class="clumn_name"><img src="./themes/default/images/gender_child.png" />
+                                <div class="text_name">Children</div>
+                            </div>
+                            <div class="clumn_value">
+                                <div class="value_pink" id="part11-children">100</div>
+                            </div>
+                            <div class="clumn_percent">
+                                <div class="percentright">
+                                    <div class="value_pink" id="part11-children-change">5%</div><img class="value_do"
+                                        src="./themes/default/images/icon_sanjiaoxing_bottom_red.png">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="weeklydistributionarea">
+            <div class="innercontent">
+                <div class="section_title">
+                    <div class="floatleft">Weekly Footfall Distribution Overal</div>
+                    <div class="floatright">
+                        <div
+                            style="float: left;width:16px;height:16px;border-radius:3px;background-color: #DC2D65;margin-top:8px;">
+                            &nbsp;</div>
+                        <div
+                            style="float: left;margin-left:4px;font-size:12px;line-height:16px;font-weight:normal;text-align: center;margin-top:8px;">
+                            Unknown</div>
+
+                        <div
+                            style="float: left;width:16px;height:16px;border-radius:3px;background-color: #5D4EB5;margin-left:30px;margin-top:8px;">
+                            &nbsp;</div>
+                        <div
+                            style="float: left;margin-left:4px;font-size:12px;line-height:16px;font-weight:normal;text-align: center;margin-top:8px;">
+                            Male</div>
+
+                        <div
+                            style="float: left;width:16px;height:16px;border-radius:3px;background-color: #15AD63;margin-left:30px;margin-top:8px;">
+                            &nbsp;</div>
+                        <div
+                            style="float: left;margin-left:4px;font-size:12px;line-height:16px;font-weight:normal;text-align: center;margin-top:8px;">
+                            Female</div>
+
+                        <div
+                            style="float: left;width:16px;height:16px;border-radius:3px;background-color: #24C4EF;margin-left:30px;margin-top:8px;">
+                            &nbsp;</div>
+                        <div
+                            style="float: left;margin-left:4px;font-size:12px;line-height:16px;font-weight:normal;text-align: center;margin-top:8px;">
+                            Children</div>
+                    </div>
+                </div>
+                <div style="float:left;width:100%;margin-top:10px;">
+                    <div
+                        style="float:left;line-height:30px;padding:0px 12px;background-color: #344DA0;border:1px solid #344DA0;color:white;border-radius:16px;margin-right:10px;">
+                        Weekly</div>
+                    <div
+                        style="float:left;line-height:30px;padding:0px 12px;background-color: #FFFFFF;border:1px solid #000000;color:black;border-radius:16px;margin-right:10px;">
+                        Monthly</div>
+                    <div
+                        style="float:left;line-height:30px;padding:0px 12px;background-color: #FFFFFF;border:1px solid #000000;color:black;border-radius:16px;margin-right:10px;">
+                        Quarterly</div>
+                    <div
+                        style="float:left;line-height:30px;padding:0px 12px;background-color: #FFFFFF;border:1px solid #000000;color:black;border-radius:16px;margin-right:10px;">
+                        Yearly</div>
+                </div>
+                <div style="float:left;width:100%;margin-top:20px;">
+                    <div style="float:left;width:100%;">
+                        <div style="float:left;width:100%;">
+
+                            <div style="float: left;width:100%;height:350px;">
+                                <canvas id="canvas_11" style="width:100%;height:100%;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="float: left;width:100%;">
+                    <div
+                        style="float: left;width:calc(100% - 32px - 0px);margin-left:32px;line-height:20px;text-align:center;">
+                        <div style="float: left;width:100%;">
+                            <div style="float: left;width:calc((100%/7)/3);">&nbsp;</div>
+                            <div style="float: left;width:calc((100%/7)/3);text-align: center;">M</div>
+
+                            <div style="float: left;width:calc((100%/7)/3);">&nbsp;</div>
+                            <div style="float: left;width:calc((100%/7)/3);">&nbsp;</div>
+
+                            <div style="float: left;width:calc((100%/7)/3);text-align: center;">T</div>
+
+                            <div style="float: left;width:calc((100%/7)/3);">&nbsp;</div>
+                            <div style="float: left;width:calc((100%/7)/3);">&nbsp;</div>
+
+                            <div style="float: left;width:calc((100%/7)/3);text-align: center;">W</div>
+
+                            <div style="float: left;width:calc((100%/7)/3);">&nbsp;</div>
+                            <div style="float: left;width:calc((100%/7)/3);">&nbsp;</div>
+
+                            <div style="float: left;width:calc((100%/7)/3);text-align: center;">Tr</div>
+
+                            <div style="float: left;width:calc((100%/7)/3);">&nbsp;</div>
+                            <div style="float: left;width:calc((100%/7)/3);">&nbsp;</div>
+
+                            <div style="float: left;width:calc((100%/7)/3);text-align: center;">Fr</div>
+
+                            <div style="float: left;width:calc((100%/7)/3);">&nbsp;</div>
+                            <div style="float: left;width:calc((100%/7)/3);">&nbsp;</div>
+
+                            <div style="float: left;width:calc((100%/7)/3);text-align: center;">St</div>
+
+                            <div style="float: left;width:calc((100%/7)/3);">&nbsp;</div>
+                            <div style="float: left;width:calc((100%/7)/3);">&nbsp;</div>
+
+                            <div style="float: left;width:calc((100%/7)/3);text-align: center;">S</div>
+                            <div style="float: left;width:calc((100%/7)/3);">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
