@@ -78,7 +78,7 @@ def get_dashboard_data():
         def calc_percent_change(current, previous):
             if previous == 0:
                 return 0
-            return int(round(((current - previous) / previous) * 100))
+            return round(((current - previous) / previous) * 100, 1)
         
         # Part 1: Total visitors and comparison
         cur.execute("""
@@ -140,10 +140,10 @@ def get_dashboard_data():
             row = cur.fetchone()
             
             total = row[0]
-            male_percent = int(round((row[1] / total) * 100)) if total > 0 else 0
-            female_percent = int(round((row[2] / total) * 100)) if total > 0 else 0
-            minor_percent = int(round((row[3] / total) * 100)) if total > 0 else 0
-            unknown_percent = int(round((row[4] / total) * 100)) if total > 0 else 0
+            male_percent = round((row[1] / total) * 100, 1) if total > 0 else 0
+            female_percent = round((row[2] / total) * 100, 1) if total > 0 else 0
+            minor_percent = round((row[3] / total) * 100, 1) if total > 0 else 0
+            unknown_percent = round((row[4] / total) * 100, 1) if total > 0 else 0
             
             # 获取Peak Period（最高人流时段）
             cur.execute("""
