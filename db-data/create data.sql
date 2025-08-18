@@ -42,3 +42,20 @@ CREATE INDEX idx_video_analysis_run ON video_analysis(run_id);
 INSERT INTO public.run_records(folder_path, run_date, total_videos) 
 VALUES 
     ('./input', TIMESTAMP '2025-08-01 09:44:00.000', 17664);
+
+-- CREATE TABLE
+CREATE TABLE public.users( 
+    id SERIAL PRIMARY KEY
+    , username VARCHAR (50) UNIQUE NOT NULL
+    , password_hash VARCHAR (128) NOT NULL
+    , role VARCHAR (20) NOT NULL DEFAULT 'user'
+    , last_login timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP(0) NOT NULL
+);
+
+INSERT 
+INTO users(username, password_hash, role) 
+VALUES ( 
+    'admin'
+    , '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'
+    , 'admin'
+);

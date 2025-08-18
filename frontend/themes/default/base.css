@@ -43,7 +43,7 @@ a:hover {
 	text-decoration: underline;
 }
 
-input[type=text],
+input[type=date],
 input[type=password],
 textarea {
 	float: left;
@@ -56,6 +56,7 @@ textarea {
 	border: 1px solid #000000;
 	background: #ffffff;
 	border-radius: 10px;
+	font-size: 16px;
 }
 
 input[disabled=disabled],
@@ -126,9 +127,11 @@ select:focus {
     /* float: left; */
     display: flex;
     align-items: center;
-    width: calc(100% - 62px - 62px);
+	justify-content: center;
+    width: 110%;
     margin-left: 62px;
     padding-bottom: 20px;
+	gap: 40px;
 }
 
 .headersection .headerinner .logoarea {
@@ -183,18 +186,31 @@ select:focus {
 }
 
 .headersection .headerinner .menuarea .menuleftcontent {
-	float: left;
-	width: calc(100% - 450px - 50px);
 	display: flex;
-	flex-direction: row;
-	justify-content: center;
-	align-items: center;
+    flex-direction: row;
+    align-items: flex-start;
+    flex-wrap: nowrap;
 }
 
-.headersection .headerinner .menuarea .menuleftcontent .searchselection {
-	float: left;
-	width: 318px;
-	margin-left: 50px;
+.searchselection.section1 { width: 320px; margin-left: 0; }
+.searchselection.section2 { width: 320px; margin-left: 32px; }
+.searchselection.section3 { width: 320px; margin-left: 32px; }
+.searchselection.section4 { width: 320px; margin-left: 32px; }
+.searchselection.section5 { width: 320px; margin-left: 32px; }
+.searchselection.section6 { width: 320px; margin-left: 32px; }
+
+.headersection .headerinner .menuarea .menuleftcontent {
+    flex: 1 -1 0;
+    min-width: 120px;
+    max-width: 260px;
+    width: auto !important;
+}
+
+.headersection .headerinner .menuarea .menuleftcontent input[type="date"],
+.headersection .headerinner .menuarea .menuleftcontent select {
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: normal;
 }
 
 .headersection .headerinner .menuarea .menuleftcontent .searchselection:first-child {
@@ -203,28 +219,22 @@ select:focus {
 
 .headersection .headerinner .menuarea .menuleftcontent .searchselection .search_title {
 	float: left;
-	width: 100%;
+	width: calc(100% - 20px);
 	font-weight: bold;
+	white-space: nowrap;
 }
 
 .headersection .headerinner .menuarea .menuleftcontent .searchselection .search_location {
 	float: left;
-	width: 100%;
+	width: calc(100% - 20px);
 	margin-top: 5px;
 }
 
 .headersection .headerinner .menuarea .menuleftcontent .searchselection .search_location select {
-	float: left;
-	background: url(./images/select_arrow_black.png) right center no-repeat scroll rgba(255, 255, 255, 0.8);
-	border: 1px solid #000000;
-	color: black;
-	appearance: none;
-	height: 35px;
-	width: 100%;
-	margin: 0px;
-	font-size: 14px;
-	line-height: 20px;
-	padding: 6px 0px 6px 10px;
+	width: 140px !important;
+	height: 33px;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .headersection .headerinner .menuarea .menuleftcontent .searchselection .search_date {
@@ -234,9 +244,10 @@ select:focus {
 }
 
 .headersection .headerinner .menuarea .menuleftcontent .searchselection .search_date input {
-	float: left;
-	width: calc(100% - 6px);
-	height: 23px;
+    width: 100% !important;
+	height: 33px;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .headersection .headerinner .menuarea .menuleftcontent .searchselection .search_date .searchflag {
@@ -297,24 +308,32 @@ select:focus {
 
 .totalarea {
 	float: left;
-	width: calc(100% - 450px - 50px);
+	width: calc(78%);
 }
 
 .totalarea .innercontent {
-	float: left;
-	width: 100%;
-	background: white;
-	border-radius: 20px;
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    background: white;
+    border-radius: 20px;
 }
 
 .totalarea .innercontent .leftarea {
-	float: left;
-	width: 45%;
+	float: none;
+	width: 40%;
+}
+
+.totalarea .innercontent .rightarea {
+    width: 60%;
+    float: left;
+    padding-left: 0;
+    margin-left: 0;
 }
 
 .totalarea .innercontent .leftarea .summaryarea {
-	float: left;
-	width: calc(100% - 120px);
+	/* float: left;
+	width: calc(100% - 120px); */
 	padding: 30px;
 }
 
@@ -343,10 +362,10 @@ select:focus {
 .totalarea .innercontent .leftarea .summaryarea .bigtextshow .compare_name {
 	float: left;
 	width: 100%;
-	font-size: 14px;
+	font-size: 18px;
 	font-weight: bold;
 	color: #D5D5D5;
-	margin-top: 12px;
+	margin-top: 25px;
 }
 
 .totalarea .innercontent .leftarea .summaryarea .bigtextshow .compare_content {
@@ -374,7 +393,7 @@ select:focus {
     /* float: left; */
 }
 
-.totalarea .innercontent .leftarea .summaryarea .bigtextshow .compare_content .compare_up {
+.totalarea .innercontent .leftarea .summaryarea .bigtextshow .compare_content .compare_up, .comparison_up1, .comparison_up2, .comparison_up3, .comparison_up4{
 	/* float: left; */
 	width: 16px;
 	height: 16px;
@@ -396,7 +415,7 @@ select:focus {
 	font-size: 20px;
 	line-height: 30px;
 	font-weight: normal;
-	margin-top: 18px;
+	margin-top: 35px;
 }
 
 .totalarea .innercontent .leftarea .summaryarea .big_peakperiod span {
@@ -416,15 +435,10 @@ select:focus {
 	color: #B95E25;
 }
 
-.totalarea .innercontent .rightarea {
-	float: left;
-	width: 55%;
-}
-
 .genderbreakdownarea {
 	float: left;
-	width: 450px;
-	margin-left: 25px;
+	width: calc(20% - 22px);
+	margin-left: 15px;
 	background: white;
 	border-radius: 20px;
 }
@@ -448,14 +462,18 @@ select:focus {
 }
 
 .genderbreakdownarea .innercontent .genderbreakdowncontent .list {
+	display: flex;
 	float: left;
 	width: 100%;
 	margin-top: 50px;
 }
 
 .genderbreakdownarea .innercontent .genderbreakdowncontent .list .clumn_name {
-	float: left;
-	width: 48%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	width: 36%;
 }
 
 .genderbreakdownarea .innercontent .genderbreakdowncontent .list .clumn_name img {
@@ -465,31 +483,33 @@ select:focus {
 }
 
 .genderbreakdownarea .innercontent .genderbreakdowncontent .list .clumn_name .text_name {
-	float: left;
+	display: block;
 	font-size: 16px;
 	line-height: 20px;
-	margin: 20px 0px;
+	margin: 8px 0 0 0;
+	text-align: center;
 }
 
 .genderbreakdownarea .innercontent .genderbreakdowncontent .list .clumn_value {
 	float: left;
 	width: 28%;
+	margin-left: 8px;
 }
 
 .genderbreakdownarea .innercontent .genderbreakdowncontent .list .clumn_value .value_green {
-	float: right;
+	float: left;
 	font-size: 38px;
 	line-height: 44px;
-	margin: 8px 0px;
+	margin: 9px -20px;
 	font-weight: bold;
 	color: #15AD63;
 }
 
 .genderbreakdownarea .innercontent .genderbreakdowncontent .list .clumn_value .value_pink {
-	float: right;
+	float: left;
 	font-size: 38px;
 	line-height: 44px;
-	margin: 8px 0px;
+	margin: 9px -20px;
 	font-weight: bold;
 	color: #DC2D65;
 }
@@ -554,14 +574,14 @@ select:focus {
 .tablearea {
     display: flex;
     flex-wrap: wrap;
-    gap: 20px 0;
+    gap: 10px 0;
+    justify-content: flex-start;
+    padding-left: 0;
 }
 
 .tablearea .tablebox {
-    float: none;
     width: calc(50% - 8px);
     margin-left: 0;
-    margin-top: 0;
 }
 
 .tablearea .tablebox:nth-child(1) {
@@ -578,8 +598,8 @@ select:focus {
 
 .tablearea .tablebox .subitem {
 	float: left;
-	width: calc(100% - 2px - 30px);
-	padding: 20px 0px 20px 10px;
+	width: 90%;
+	padding: 12px 25px 10px 10px;
 	border: 1px solid #EDEDED;
 	border-radius: 20px;
 }
@@ -607,8 +627,8 @@ select:focus {
 }
 
 .tablearea .tablebox .subitem .subitem_right {
-	float: left;
-	width: 120px;
+	float: right;
+	width: 80px;
 }
 
 .tablearea .tablebox .subitem .subitem_right .grouplist {
@@ -651,7 +671,7 @@ select:focus {
 	font-size: 18px;
 	line-height: 18px;
 	font-weight: normal;
-	margin-top: 8px;
+	margin-top: 18px;
 }
 
 .tablearea .tablebox .subitem .subitem_peakperiod .valcolor {
@@ -672,18 +692,22 @@ select:focus {
 	color: #00C096;
 }
 
-
 .importarea {
 	float: left;
 	width: 100%;
 	margin-top: 20px;
+	display: flex;
+    flex-wrap: nowrap;
+    gap: 15px;
+	overflow-x: auto;
 }
 
 .importarea .subitem {
 	float: left;
-	width: calc(25% - 40px - 15px);
+	width: 25%;
 	padding: 20px 20px;
-	margin-left: 20px;
+	min-width: 280px; 
+	margin-left: 0;
 	background: white;
 	border-radius: 20px;
 }
@@ -751,16 +775,10 @@ select:focus {
     margin-top: 0;
 }
 
-.comparison_up1, .comparison_up2, .comparison_up3 {
-    width: 16px;
-    height: 16px;
-    margin-left: 6px;
-}
-
-.importarea .subitem .subitem_left .comparison_content .comparison_up1 .comparison_up2 .comparison_up3 {
+.importarea .subitem .subitem_left .comparison_content {
 	float: left;
-	width: 16px;
-	height: 16px;
+	width: 12px;
+	height: 12px;
 	margin-left: 6px;
 	margin-top: 4px;
 }
@@ -785,8 +803,8 @@ select:focus {
 .importarea .subitem .subitem_right .barshow_area {
 	float: left;
 	width: calc(100% + 60px);
-	margin-left: -60px;
-	margin-top: -10px;
+	margin-left: -50px;
+	margin-top: -17px;
 	font-size: 12px;
 }
 
@@ -1003,7 +1021,7 @@ select:focus {
 
 .weeklydistributionarea .innercontent {
 	float: left;
-	width: calc(100% - 60px);
+	width: calc(100% - 100px);
 	padding: 30px;
 }
 
@@ -1012,4 +1030,91 @@ select:focus {
 	width: 100%;
 	font-size: 18px;
 	font-weight: bold;
+}
+
+.framecontent,
+.totalareafenbu {
+    width: 100vw;
+    max-width: 100vw;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+.leftarea,
+.rightarea,
+.genderbreakdownarea {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.tablearea {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; 
+}
+
+body {
+    overflow-x: hidden;
+}
+
+.logout-area {
+    transform: translateX(-60px); 
+}
+
+.logout-content {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    flex-wrap: nowrap;
+}
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+#logoutBtn {
+    background: #dc2d65;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.menucontent-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.headersection .headerinner {
+    width: 100%; /* 由110%改为100%，避免溢出 */
+    margin-left: 0; /* 去掉多余左边距 */
+    padding-bottom: 20px;
+    gap: 40px;
+}
+
+.headersection .headerinner .logoarea {
+    flex-shrink: 0;
+    min-width: 250px;
+    max-width: 250px;
+}
+
+.headersection .headerinner .menuarea {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+    margin-left: 0;
+}
+
+.headersection .headerinner .menuarea .menucontent-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
 }

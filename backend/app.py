@@ -1,10 +1,13 @@
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, session, redirect, url_for
+from functools import wraps
 import psycopg2
 from datetime import datetime
 import os
 from dotenv import load_dotenv
-import json
+import hashlib
+import secrets
 
+# 加载环境变量
 load_dotenv()
 
 # 获取项目根目录
@@ -12,6 +15,9 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 frontend_path = os.path.join(project_root, 'frontend')
 
 app = Flask(__name__, static_folder=frontend_path, static_url_path='')
+
+# 设置安全密钥
+app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(32))
 
 # 数据库配置
 DB_CONFIG = {
@@ -25,36 +31,210 @@ DB_CONFIG = {
 def get_db_connection():
     return psycopg2.connect(**DB_CONFIG)
 
+# 登录保护装饰器
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return jsonify({"error": "Authentication required"}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/')
 def index():
-    return send_from_directory(app.static_folder, 'dashboard.html')
+    if session.get('logged_in'):
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login_page'))
 
-@app.route('/<path:path>')
-def static_files(path):
-    return send_from_directory(app.static_folder, path)
+@app.route('/login', methods=['GET'])
+def login_page():
+    return send_from_directory(app.static_folder, 'login.html')
 
-@app.route('/api/cameras', methods=['GET'])
-def get_cameras():
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    
+    if not username or not password:
+        return jsonify({"error": "Username and password required"}), 400
+    
     conn = get_db_connection()
     cur = conn.cursor()
+    
     try:
-        cur.execute("SELECT DISTINCT camera_name FROM video_analysis ORDER BY camera_name")
-        cameras = [row[0] for row in cur.fetchall()]
-        return jsonify(cameras)
+        cur.execute("SELECT id, password_hash, role, last_login FROM users WHERE username = %s", (username,))
+        user = cur.fetchone()
+        
+        if not user:
+            return jsonify({"error": "Invalid credentials"}), 401
+        
+        user_id, password_hash, role, last_login = user
+        
+        # 使用SHA-256哈希验证密码
+        hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        if hashed_password != password_hash:
+            return jsonify({"error": "Invalid credentials"}), 401
+        
+        # 更新最后登录时间
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        cur.execute("""
+            UPDATE users 
+            SET last_login = %s 
+            WHERE id = %s
+        """, (current_time, user_id))
+        conn.commit()
+        
+        # 创建会话
+        session['user_id'] = user_id
+        session['username'] = username
+        session['role'] = role
+        session['last_login'] = current_time
+        session['logged_in'] = True
+        
+        return jsonify({
+            "message": "Login successful",
+            "last_login": current_time
+        }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         cur.close()
         conn.close()
 
-@app.route('/api/last_run_date', methods=['GET'])
-def get_last_run_date():
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login_page'))
+
+@app.route('/dashboard')
+def dashboard():
+    if not session.get('logged_in'):
+        return redirect(url_for('login_page'))
+    return send_from_directory(app.static_folder, 'dashboard.html')
+
+@app.route('/api/check-session')
+def check_session():
+    if session.get('logged_in'):
+        # 从会话中获取最后登录时间
+        last_login = session.get('last_login', 'Never')
+        if isinstance(last_login, datetime):
+            last_login = last_login.strftime("%Y-%m-%d %H:%M:%S")
+        
+        return jsonify({
+            "authenticated": True,
+            "username": session.get('username'),
+            "last_login": last_login
+        })
+    return jsonify({"authenticated": False}), 401
+
+@app.route('/api/update-last-login', methods=['POST'])
+@login_required
+def update_last_login():
+    if not session.get('logged_in') or 'user_id' not in session:
+        return jsonify({"error": "Authentication required"}), 401
+    
     conn = get_db_connection()
     cur = conn.cursor()
+    
     try:
-        cur.execute("SELECT MAX(run_date) FROM run_records")
-        last_run_date = cur.fetchone()[0]
-        return jsonify({"last_run_date": last_run_date.strftime("%Y-%m-%d") if last_run_date else None})
+        # 获取当前时间作为新的最后登录时间
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # 更新数据库中的最后登录时间
+        cur.execute("""
+            UPDATE users 
+            SET last_login = %s 
+            WHERE id = %s
+            RETURNING last_login
+        """, (current_time, session['user_id']))
+        
+        updated_last_login = cur.fetchone()[0]
+        conn.commit()
+        
+        # 更新会话中的最后登录时间
+        session['last_login'] = updated_last_login
+        
+        return jsonify({
+            "success": True,
+            "new_last_login": updated_last_login.strftime("%Y-%m-%d %H:%M:%S")
+        }), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+# @app.route('/api/cameras', methods=['GET'])
+# @login_required
+# def get_cameras():
+#     conn = get_db_connection()
+#     cur = conn.cursor()
+#     try:
+#         cur.execute("SELECT DISTINCT camera_name FROM video_analysis ORDER BY camera_name")
+#         cameras = [row[0] for row in cur.fetchall()]
+#         return jsonify(cameras)
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         cur.close()
+#         conn.close()
+
+# @app.route('/api/last_run_date', methods=['GET'])
+# @login_required
+# def get_last_run_date():
+#     conn = get_db_connection()
+#     cur = conn.cursor()
+#     try:
+#         cur.execute("SELECT MAX(run_date) FROM run_records")
+#         last_run_date = cur.fetchone()[0]
+#         return jsonify({"last_run_date": last_run_date.strftime("%Y-%m-%d") if last_run_date else None})
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         cur.close()
+#         conn.close()
+
+@app.route('/api/alltime', methods=['GET'])
+@login_required
+def get_all_time():
+    # 获取查询参数（日期范围）
+    start_date = request.args.get('date_start')
+    end_date = request.args.get('date_end')
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        # 构建基础查询
+        base_query = """
+            SELECT DISTINCT 
+                TO_CHAR(start_time, 'HH24:MI:SS') AS start_time_str,
+                TO_CHAR(end_time, 'HH24:MI:SS') AS end_time_str
+            FROM video_analysis
+            WHERE 1=1
+        """
+        params = []
+        
+        # 添加日期范围条件
+        if start_date and end_date:
+            base_query += " AND start_time::date BETWEEN %s AND %s"
+            params.extend([start_date, end_date])
+        
+        # 添加排序
+        base_query += " ORDER BY start_time_str, end_time_str"
+        
+        cur.execute(base_query, params)
+        time_slots = cur.fetchall()
+        
+        # 转换为前端需要的格式: [{start: "00:00:00", end: "00:59:59"}, ...]
+        formatted_slots = [
+            {"start": slot[0], "end": slot[1]} 
+            for slot in time_slots
+        ]
+        
+        return jsonify(formatted_slots)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
@@ -62,9 +242,9 @@ def get_last_run_date():
         conn.close()
 
 @app.route('/api/dashboard', methods=['POST'])
+@login_required
 def get_dashboard_data():
     data = request.json
-    camera_name = data.get('camera_name')  # Not used in this version per requirements
     date_start = data.get('date_start')
     date_end = data.get('date_end')
     ref_date_start = data.get('ref_date_start')
@@ -278,22 +458,34 @@ def get_dashboard_data():
             'part7': {
                 'value': cold_storage,
                 'comparison': cold_storage_ref,
-                'percent_change': cold_storage_percent
+                'percent_change': cold_storage_percent,
+                "male": 100,
+                "female": 50,
+                "unknown": 50
             },
             'part8': {
                 'value': a8_value,
                 'comparison': a8_ref,
-                'percent_change': a8_percent
+                'percent_change': a8_percent,
+                "male": 100,
+                "female": 50,
+                "unknown": 50
             },
             'part9': {
                 'value': canteen_value,
                 'comparison': canteen_ref,
-                'percent_change': canteen_percent
+                'percent_change': canteen_percent,
+                "male": 100,
+                "female": 50,
+                "unknown": 50
             },
             'part10': {
                 'value': second_floor_value,
                 'comparison': second_floor_ref,
-                'percent_change': second_floor_percent
+                'percent_change': second_floor_percent,
+                "male": 100,
+                "female": 50,
+                "unknown": 50
             },
             'part11': {
                 'male': {
