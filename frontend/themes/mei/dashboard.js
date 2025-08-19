@@ -7,7 +7,7 @@ function checkLoginStatus() {
                 // 显示用户名和最后登录时间
                 document.getElementById('usernameDisplay').textContent = data.username;
                 document.getElementById('lastLoginDisplay').textContent = data.last_login;
-                
+
                 // 更新登出按钮区域的用户名显示
                 const welcomeSpan = document.querySelector('.logout-content span');
                 if (welcomeSpan) {
@@ -27,17 +27,17 @@ function updateLastLoginTime() {
             'Content-Type': 'application/json'
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log('最后登录时间已更新');
-            // 更新页面显示的最后登录时间
-            document.getElementById('lastLoginDisplay').textContent = data.new_last_login;
-        }
-    })
-    .catch(error => {
-        console.error('更新最后登录时间时出错:', error);
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('最后登录时间已更新');
+                // 更新页面显示的最后登录时间
+                document.getElementById('lastLoginDisplay').textContent = data.new_last_login;
+            }
+        })
+        .catch(error => {
+            console.error('更新最后登录时间时出错:', error);
+        });
 }
 
 // dashboard.js - 智能分析仪表板脚本
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 首先更新登录时间
     updateLastLoginTime();
-    
+
     // 然后检查登录状态
     checkLoginStatus();
 
@@ -55,6 +55,8 @@ document.addEventListener('DOMContentLoaded', function () {
             window.location.href = '/login';
         });
     });
+
+    let dashboardChart = null;
 
     // 获取DOM元素
     const startTimeInput = document.getElementById('startTimeInput');
@@ -167,6 +169,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 显示结果
     function displayResults(data) {
+
+        window.dashboardData = data;
+
         // part1：总访问量
         if (data.part1) {
             document.getElementById('part1-total').textContent = data.part1.total || '-';
@@ -232,6 +237,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             hideLoading('part11');
         }
+
+        // 更新Weekly Footfall Distribution Overal区域
+        setCharts(data.part12);
+
     }
 
     function fillCameraStats(partId, stats) {
@@ -649,7 +658,200 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function showXAxisLabels(type) {
+        document.querySelectorAll('.xaxis-labels').forEach(div => div.style.display = 'none');
+        if (type === 'weekly') {
+            document.getElementById('xaxis-weekly').style.display = '';
+        } else if (type === 'monthly') {
+            document.getElementById('xaxis-monthly').style.display = '';
+        } else if (type === 'quarterly') {
+            document.getElementById('xaxis-quarterly').style.display = '';
+        } else if (type === 'yearly') {
+            document.getElementById('xaxis-yearly').style.display = '';
+        }
+    }
+
+    // 初始化仪表板
+    function setCharts(data, type = 'weekly_current') {
+        const container = document.getElementById('chart-container');
+        const ctx = document.getElementById("canvas_11");
+
+        // 完全移除旧图表（物理销毁）
+        if (window.dashboardChart) {
+            window.dashboardChart.destroy();
+        }
+
+        // 物理替换canvas元素 - 关键步骤
+        const newCanvas = document.createElement('canvas');
+        newCanvas.id = "canvas_11";
+        newCanvas.height = ctx.height;
+        newCanvas.width = ctx.width;
+        newCanvas.style.cssText = ctx.style.cssText;
+        ctx.parentNode.replaceChild(newCanvas, ctx);
+
+        // 根据类型解析数据周期
+        const [period, time] = type.split('_');
+
+        // 映射UI数据到Chart.js格式
+        const periods = {
+            weekly: {
+                labels: ['M', 'T', 'W', 'Tr', 'Fr', 'St', 'S'],
+                data: [
+                    data[type].unknown,
+                    data[type].male,
+                    data[type].female,
+                    data[type].children
+                ],
+                maxBarThickness: 40
+            },
+            monthly: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                data: [
+                    data[type].unknown,
+                    data[type].male,
+                    data[type].female,
+                    data[type].children
+                ],
+                maxBarThickness: 20
+            },
+            quarterly: {
+                labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                data: [
+                    data[type].unknown,
+                    data[type].male,
+                    data[type].female,
+                    data[type].children
+                ],
+                maxBarThickness: 50
+            },
+            yearly: {
+                labels: ['Y1', 'Y2', 'Y3', 'Y4'],
+                data: [
+                    data[type].unknown,
+                    data[type].male,
+                    data[type].female,
+                    data[type].children
+                ],
+                maxBarThickness: 50
+            }
+        };
+
+        // 创建多数据集
+        const datasets = [
+            {
+                label: 'Unknown',
+                data: periods[period].data[0],
+                backgroundColor: '#DC2D65',
+                maxBarThickness: periods[period].maxBarThickness
+            },
+            {
+                label: 'Male',
+                data: periods[period].data[1],
+                backgroundColor: '#5D4EB5',
+                maxBarThickness: periods[period].maxBarThickness
+            },
+            {
+                label: 'Female',
+                data: periods[period].data[2],
+                backgroundColor: '#15AD63',
+                maxBarThickness: periods[period].maxBarThickness
+            },
+            {
+                label: 'Children',
+                data: periods[period].data[3],
+                backgroundColor: '#24C4EF',
+                maxBarThickness: periods[period].maxBarThickness
+            }
+        ];
+
+        // 创建新图表
+        window.dashboardChart = new Chart(newCanvas, {
+            type: 'bar',
+            data: {
+                labels: periods[period].labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 12,
+                            usePointStyle: true
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function (value) {
+                                // 动态调整Y轴标签格式
+                                return value > 1000 ?
+                                    (value / 1000).toFixed(1) + 'k' :
+                                    value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            // 切换样式
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // 切换数据
+            if (!window.dashboardData) return; // 确保数据已加载
+            switch (btn.id) {
+                case 'historical-weekly-btn':
+                    setCharts(window.dashboardData.part12, 'weekly_historical');
+                    showXAxisLabels('weekly');
+                    break;
+                case 'historical-monthly-btn':
+                    setCharts(window.dashboardData.part12, 'monthly_historical');
+                    showXAxisLabels('monthly');
+                    break;
+                case 'historical-quarterly-btn':
+                    setCharts(window.dashboardData.part12, 'quarterly_historical');
+                    showXAxisLabels('quarterly');
+                    break;
+                case 'historical-yearly-btn':
+                    setCharts(window.dashboardData.part12, 'yearly_historical');
+                    showXAxisLabels('yearly');
+                    break;
+                case 'current-weekly-btn':
+                    setCharts(window.dashboardData.part12, 'weekly_current');
+                    showXAxisLabels('weekly');
+                    break;
+                case 'current-monthly-btn':
+                    setCharts(window.dashboardData.part12, 'monthly_current');
+                    showXAxisLabels('monthly');
+                    break;
+                case 'current-quarterly-btn':
+                    setCharts(window.dashboardData.part12, 'quarterly_current');
+                    showXAxisLabels('quarterly');
+                    break;
+                case 'current-yearly-btn':
+                    setCharts(window.dashboardData.part12, 'yearly_current');
+                    showXAxisLabels('yearly');
+                    break;
+            }
+        });
+    });
+
     // 初始化仪表板
     initializeDashboard();
-
 });

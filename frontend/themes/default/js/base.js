@@ -35,7 +35,7 @@ function load_rangenoUiSlider_pc() {
 }
 $(document).ready(function () {
     var range_pc = document.getElementById('range_pc');
-    load_rangenoUiSlider_pc();//加载选择区间滑动搜索 - 电脑版
+    // load_rangenoUiSlider_pc();//加载选择区间滑动搜索 - 电脑版
     var a_3 = new Array();
     var b_3 = new Array();
     var c_3 = new Array();
@@ -316,13 +316,13 @@ $(document).ready(function () {
             },
             // 折线图数据集
             {
-                label: '折线图数据',
-                type: 'line', // 指定类型为折线图
-                data: c_3,
-                backgroundColor: '#BABABA',
-                borderColor: '#BABABA',
-                borderWidth: 2,
-                fill: false // 折线图通常不填充
+                // label: '折线图数据',
+                // type: 'line', // 指定类型为折线图
+                // data: c_3,
+                // backgroundColor: '#BABABA',
+                // borderColor: '#BABABA',
+                // borderWidth: 2,
+                // fill: false // 折线图通常不填充
             }]
         },
         options: {
