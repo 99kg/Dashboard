@@ -1137,3 +1137,7 @@ body {
     border: 1px solid #344DA0;
     color: white;
 }
+
+.chartjs-legend {
+  display: none !important;
+}

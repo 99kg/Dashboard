@@ -658,109 +658,160 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function showXAxisLabels(type) {
-        document.querySelectorAll('.xaxis-labels').forEach(div => div.style.display = 'none');
-        if (type === 'weekly') {
-            document.getElementById('xaxis-weekly').style.display = '';
-        } else if (type === 'monthly') {
-            document.getElementById('xaxis-monthly').style.display = '';
-        } else if (type === 'quarterly') {
-            document.getElementById('xaxis-quarterly').style.display = '';
-        } else if (type === 'yearly') {
-            document.getElementById('xaxis-yearly').style.display = '';
-        }
-    }
-
-    // 初始化仪表板
+    // 初始化仪表板图表函数
     function setCharts(data, type = 'weekly_current') {
-        const container = document.getElementById('chart-container');
-        const ctx = document.getElementById("canvas_11");
+        const canvas = document.getElementById("canvas_11");
+        const ctx = canvas.getContext('2d');
 
-        // 完全移除旧图表（物理销毁）
+        // 彻底销毁旧图表
         if (window.dashboardChart) {
             window.dashboardChart.destroy();
         }
 
-        // 物理替换canvas元素 - 关键步骤
+        // 重置画布 - 解决图表残留问题
         const newCanvas = document.createElement('canvas');
         newCanvas.id = "canvas_11";
-        newCanvas.height = ctx.height;
-        newCanvas.width = ctx.width;
-        newCanvas.style.cssText = ctx.style.cssText;
-        ctx.parentNode.replaceChild(newCanvas, ctx);
+        newCanvas.width = canvas.width;
+        newCanvas.height = canvas.height;
+        newCanvas.style.cssText = canvas.style.cssText;
+        canvas.parentNode.replaceChild(newCanvas, canvas);
 
-        // 根据类型解析数据周期
-        const [period, time] = type.split('_');
+        // 根据类型生成动态标签
+        const today = new Date();
+        let labels = [];
 
-        // 映射UI数据到Chart.js格式
-        const periods = {
-            weekly: {
-                labels: ['M', 'T', 'W', 'Tr', 'Fr', 'St', 'S'],
-                data: [
-                    data[type].unknown,
-                    data[type].male,
-                    data[type].female,
-                    data[type].children
-                ],
-                maxBarThickness: 40
-            },
-            monthly: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                data: [
-                    data[type].unknown,
-                    data[type].male,
-                    data[type].female,
-                    data[type].children
-                ],
-                maxBarThickness: 20
-            },
-            quarterly: {
-                labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-                data: [
-                    data[type].unknown,
-                    data[type].male,
-                    data[type].female,
-                    data[type].children
-                ],
-                maxBarThickness: 50
-            },
-            yearly: {
-                labels: ['Y1', 'Y2', 'Y3', 'Y4'],
-                data: [
-                    data[type].unknown,
-                    data[type].male,
-                    data[type].female,
-                    data[type].children
-                ],
-                maxBarThickness: 50
-            }
-        };
+        // 获取星期几的缩写
+        function getDayAbbreviation(dayIndex) {
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            return days[dayIndex];
+        }
+
+        // 完整月份名称
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        switch (type) {
+            case 'weekly_current':
+                // 从今天开始往前6天（共7天），最右边是今天
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    const month = d.getMonth() + 1;
+                    const date = d.getDate();
+                    const dayAbbr = getDayAbbreviation(d.getDay());
+                    labels.push(`${month}/${date} ${dayAbbr}`);
+                }
+                break;
+
+            case 'weekly_historical':
+                // 从最近的周日开始往前6天（共7天），最右边是周日
+                const lastSunday = new Date(today);
+                lastSunday.setDate(today.getDate() - today.getDay());
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date(lastSunday);
+                    d.setDate(lastSunday.getDate() - i);
+                    const month = d.getMonth() + 1;
+                    const date = d.getDate();
+                    const dayAbbr = getDayAbbreviation(d.getDay());
+                    labels.push(`${month}/${date} ${dayAbbr}`);
+                }
+                break;
+
+            case 'monthly_current':
+                // 当前月及前11个月（共12个月），最右边是当前月
+                for (let i = 11; i >= 0; i--) {
+                    const d = new Date(today);
+                    d.setMonth(today.getMonth() - i);
+                    const year = d.getFullYear();
+                    const monthName = monthNames[d.getMonth()];
+                    labels.push(`${year} ${monthName}`);
+                }
+                break;
+
+            case 'monthly_historical':
+                // 前12个月（不含当前月），最右边是上个月
+                for (let i = 12; i >= 1; i--) {
+                    const d = new Date(today);
+                    d.setMonth(today.getMonth() - i);
+                    const year = d.getFullYear();
+                    const monthName = monthNames[d.getMonth()];
+                    labels.push(`${year} ${monthName}`);
+                }
+                break;
+
+            case 'quarterly_current':
+                // 当前季度及前3个季度（共4个季度），最右边是当前季度
+                const currentQuarter = Math.floor(today.getMonth() / 3) + 1;
+                for (let i = 3; i >= 0; i--) {
+                    const quarter = currentQuarter - i;
+                    const year = today.getFullYear() - (quarter <= 0 ? 1 : 0);
+                    const quarterLabel = quarter > 0 ? `Q${quarter}` : `Q${quarter + 4}`;
+                    labels.push(`${year} ${quarterLabel}`);
+                }
+                break;
+
+            case 'quarterly_historical':
+                // 前4个季度（不含当前季度），最右边是上个季度
+                const lastQuarter = Math.floor(today.getMonth() / 3);
+                for (let i = 4; i >= 1; i--) {
+                    const quarter = lastQuarter - i + 1;
+                    const year = today.getFullYear() - (quarter <= 0 ? 1 : 0);
+                    const quarterLabel = quarter > 0 ? `Q${quarter}` : `Q${quarter + 4}`;
+                    labels.push(`${year} ${quarterLabel}`);
+                }
+                break;
+
+            case 'yearly_current':
+                // 今年及前4年（共5年），最右边是今年
+                for (let i = 4; i >= 0; i--) {
+                    labels.push(`${today.getFullYear() - i}`);
+                }
+                break;
+
+            case 'yearly_historical':
+                // 前5年（不含今年），最右边是去年
+                for (let i = 5; i >= 1; i--) {
+                    labels.push(`${today.getFullYear() - i}`);
+                }
+                break;
+
+            default:
+                // 默认使用weekly_current格式
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    const month = d.getMonth() + 1;
+                    const date = d.getDate();
+                    const dayAbbr = getDayAbbreviation(d.getDay());
+                    labels.push(`${month}/${date} ${dayAbbr}`);
+                }
+        }
 
         // 创建多数据集
         const datasets = [
             {
                 label: 'Unknown',
-                data: periods[period].data[0],
+                data: data[type].unknown,
                 backgroundColor: '#DC2D65',
-                maxBarThickness: periods[period].maxBarThickness
+                maxBarThickness: type.includes('monthly') ? 20 : 40
             },
             {
                 label: 'Male',
-                data: periods[period].data[1],
+                data: data[type].male,
                 backgroundColor: '#5D4EB5',
-                maxBarThickness: periods[period].maxBarThickness
+                maxBarThickness: type.includes('monthly') ? 20 : 40
             },
             {
                 label: 'Female',
-                data: periods[period].data[2],
+                data: data[type].female,
                 backgroundColor: '#15AD63',
-                maxBarThickness: periods[period].maxBarThickness
+                maxBarThickness: type.includes('monthly') ? 20 : 40
             },
             {
                 label: 'Children',
-                data: periods[period].data[3],
+                data: data[type].children,
                 backgroundColor: '#24C4EF',
-                maxBarThickness: periods[period].maxBarThickness
+                maxBarThickness: type.includes('monthly') ? 20 : 40
             }
         ];
 
@@ -768,7 +819,7 @@ document.addEventListener('DOMContentLoaded', function () {
         window.dashboardChart = new Chart(newCanvas, {
             type: 'bar',
             data: {
-                labels: periods[period].labels,
+                labels: labels,
                 datasets: datasets
             },
             options: {
@@ -776,10 +827,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'top',
-                        labels: {
-                            boxWidth: 12,
-                            usePointStyle: true
+                        display: true
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function (context) {
+                                return context[0].label;
+                            },
+                            label: function (context) {
+                                const value = context.parsed.y;
+                                return `${context.dataset.label}: ${value.toLocaleString()}`;
+                            }
                         }
                     }
                 },
@@ -795,10 +853,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         beginAtZero: true,
                         ticks: {
                             callback: function (value) {
-                                // 动态调整Y轴标签格式
                                 return value > 1000 ?
                                     (value / 1000).toFixed(1) + 'k' :
-                                    value;
+                                    value.toLocaleString();
                             }
                         }
                     }
@@ -818,35 +875,27 @@ document.addEventListener('DOMContentLoaded', function () {
             switch (btn.id) {
                 case 'historical-weekly-btn':
                     setCharts(window.dashboardData.part12, 'weekly_historical');
-                    showXAxisLabels('weekly');
                     break;
                 case 'historical-monthly-btn':
                     setCharts(window.dashboardData.part12, 'monthly_historical');
-                    showXAxisLabels('monthly');
                     break;
                 case 'historical-quarterly-btn':
                     setCharts(window.dashboardData.part12, 'quarterly_historical');
-                    showXAxisLabels('quarterly');
                     break;
                 case 'historical-yearly-btn':
                     setCharts(window.dashboardData.part12, 'yearly_historical');
-                    showXAxisLabels('yearly');
                     break;
                 case 'current-weekly-btn':
                     setCharts(window.dashboardData.part12, 'weekly_current');
-                    showXAxisLabels('weekly');
                     break;
                 case 'current-monthly-btn':
                     setCharts(window.dashboardData.part12, 'monthly_current');
-                    showXAxisLabels('monthly');
                     break;
                 case 'current-quarterly-btn':
                     setCharts(window.dashboardData.part12, 'quarterly_current');
-                    showXAxisLabels('quarterly');
                     break;
                 case 'current-yearly-btn':
                     setCharts(window.dashboardData.part12, 'yearly_current');
-                    showXAxisLabels('yearly');
                     break;
             }
         });

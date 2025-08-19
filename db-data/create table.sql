@@ -1,6 +1,7 @@
 -- DROP TABLE
 DROP TABLE IF EXISTS public.run_records CASCADE;
 DROP TABLE IF EXISTS public.video_analysis CASCADE;
+DROP TABLE IF EXISTS public.users CASCADE;
 
 -- CREATE TABLE
 CREATE TABLE public.run_records(
