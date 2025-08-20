@@ -47,7 +47,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get("logged_in"):
-            return jsonify({"error": "Authentication required"}), 401
+            return redirect(url_for("login_page"))
         return f(*args, **kwargs)
 
     return decorated_function
@@ -64,9 +64,11 @@ def index():
 def login_page():
     return send_from_directory(app.static_folder, "login.html")
 
+
 @app.route("/register", methods=["GET"])
 def register_page():
     return send_from_directory(app.static_folder, "register.html")
+
 
 @app.route("/api/login", methods=["POST"])
 def login():
@@ -232,6 +234,7 @@ def update_last_login():
 #     finally:
 #         cur.close()
 #         conn.close()
+
 
 @app.route("/api/alltime", methods=["GET"])
 @login_required
@@ -985,6 +988,7 @@ def get_footfall_distribution():
         cur.close()
         conn.close()
 
+
 @app.route("/api/register", methods=["POST"])
 def register():
     data = request.json
@@ -1000,9 +1004,7 @@ def register():
 
     try:
         # 验证管理员密码
-        cur.execute(
-            "SELECT password_hash FROM users WHERE role = 'admin' LIMIT 1"
-        )
+        cur.execute("SELECT password_hash FROM users WHERE role = 'admin' LIMIT 1")
         admin_password_hash = cur.fetchone()
 
         if not admin_password_hash:
@@ -1036,6 +1038,7 @@ def register():
         cur.close()
         conn.close()
 
+
 @app.route("/api/admin-login", methods=["POST"])
 def admin_login():
     data = request.json
@@ -1043,7 +1046,12 @@ def admin_login():
     password = data.get("password")
 
     if not username or not password:
-        return jsonify({"success": False, "message": "Username and password are required."}), 400
+        return (
+            jsonify(
+                {"success": False, "message": "Username and password are required."}
+            ),
+            400,
+        )
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -1057,18 +1065,32 @@ def admin_login():
         user = cur.fetchone()
 
         if not user:
-            return jsonify({"success": False, "message": "Invalid username or password."}), 401
+            return (
+                jsonify({"success": False, "message": "Invalid username or password."}),
+                401,
+            )
 
         user_id, password_hash, role = user
 
         # 验证密码
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         if hashed_password != password_hash:
-            return jsonify({"success": False, "message": "Invalid username or password."}), 401
+            return (
+                jsonify({"success": False, "message": "Invalid username or password."}),
+                401,
+            )
 
         # 检查角色是否为管理员
         if role != "admin":
-            return jsonify({"success": False, "message": "Access denied. Only administrators can access the Admin Panel."}), 403
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": "Access denied. Only administrators can access the Admin Panel.",
+                    }
+                ),
+                403,
+            )
 
         # 设置会话
         session["user_id"] = user_id
@@ -1083,12 +1105,14 @@ def admin_login():
         cur.close()
         conn.close()
 
+
 @app.route("/admin", methods=["GET"])
 @login_required
 def admin_page():
     if session.get("role") != "admin":
         return jsonify({"error": "Access denied"}), 403
     return send_from_directory(app.static_folder, "admin.html")
+
 
 @app.route("/api/admin/users", methods=["GET"])
 @login_required
@@ -1106,7 +1130,9 @@ def get_users():
                 "id": row[0],
                 "username": row[1],
                 "role": row[2],
-                "lastLogin": row[3].strftime("%Y/%m/%d %H:%M:%S") if row[3] else "Never",
+                "lastLogin": (
+                    row[3].strftime("%Y/%m/%d %H:%M:%S") if row[3] else "Never"
+                ),
             }
             for row in cur.fetchall()
         ]
@@ -1117,15 +1143,17 @@ def get_users():
         cur.close()
         conn.close()
 
+
 @app.route("/api/admin/users/<int:user_id>", methods=["PUT"])
 @login_required
-def update_user_role(user_id):
+def update_user(user_id):
     current_user_id = session.get("user_id")
     if user_id == current_user_id:
-        return jsonify({"error": "You cannot modify your own role."}), 403
+        return jsonify({"error": "You cannot modify your own account."}), 403
 
     data = request.json
     new_role = data.get("role")
+    new_password = data.get("password")
 
     if new_role not in ["admin", "user"]:
         return jsonify({"error": "Invalid role."}), 400
@@ -1134,7 +1162,17 @@ def update_user_role(user_id):
     cur = conn.cursor()
 
     try:
-        cur.execute("UPDATE users SET role = %s WHERE id = %s", (new_role, user_id))
+        if new_password:
+            password_hash = hashlib.sha256(new_password.encode()).hexdigest()
+            cur.execute(
+                "UPDATE users SET role = %s, password_hash = %s WHERE id = %s",
+                (new_role, password_hash, user_id),
+            )
+        else:
+            cur.execute(
+                "UPDATE users SET role = %s WHERE id = %s",
+                (new_role, user_id),
+            )
         conn.commit()
         return jsonify({"success": True})
     except Exception as e:
@@ -1165,6 +1203,7 @@ def delete_user(user_id):
     finally:
         cur.close()
         conn.close()
-        
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

@@ -24,13 +24,33 @@ document.addEventListener('DOMContentLoaded', async function () {
         usernameDisplay.textContent = 'Unknown User';
     }
 
+    // 全局拦截器：处理所有 fetch 请求的 401 响应
+    async function fetchWithAuth(url, options = {}) {
+        const response = await fetch(url, options);
+        if (response.status === 401) {
+            // 如果未认证，跳转到登录页面
+            window.location.href = '/login';
+            return null; // 返回 null 表示未认证
+        }
+        return response;
+    }
+
     // 加载用户列表
     async function fetchUsers() {
+        const errorMessage = document.getElementById('errorMessage');
+        const userTableBody = document.querySelector('#userTable tbody');
+
         try {
-            const response = await fetch('/api/admin/users', {
+            const response = await fetchWithAuth('/api/admin/users', {
                 method: 'GET',
                 credentials: 'include',
             });
+
+            if (response.status === 401) {
+                // 如果未认证，跳转到登录页面
+                window.location.href = '/login';
+                return;
+            }
 
             const data = await response.json();
 
@@ -79,28 +99,32 @@ document.addEventListener('DOMContentLoaded', async function () {
     async function handleEditUser(event) {
         const userId = event.target.dataset.id;
 
-        // 创建角色选择对话框
-        const roleDialog = document.createElement('div');
-        roleDialog.className = 'role-dialog';
-        roleDialog.innerHTML = `
+        // 创建角色和密码修改对话框
+        const editDialog = document.createElement('div');
+        editDialog.className = 'edit-dialog';
+        editDialog.innerHTML = `
             <div class="dialog-content">
-                <h3>Select new role</h3>
+                <h3>Edit User</h3>
+                <label for="roleSelect">Select new role:</label>
                 <select id="roleSelect">
                     <option value="admin">admin</option>
                     <option value="user">user</option>
                 </select>
+                <label for="passwordInput">Enter new password:</label>
+                <input type="password" id="passwordInput" placeholder="New password" />
                 <div class="dialog-actions">
-                    <button id="confirmRoleBtn">Confirm</button>
-                    <button id="cancelRoleBtn">Cancel</button>
+                    <button id="confirmEditBtn">Confirm</button>
+                    <button id="cancelEditBtn">Cancel</button>
                 </div>
             </div>
         `;
 
-        document.body.appendChild(roleDialog);
+        document.body.appendChild(editDialog);
 
         // 添加事件监听
-        document.getElementById('confirmRoleBtn').addEventListener('click', async () => {
+        document.getElementById('confirmEditBtn').addEventListener('click', async () => {
             const newRole = document.getElementById('roleSelect').value;
+            const newPassword = document.getElementById('passwordInput').value;
 
             try {
                 const response = await fetch(`/api/admin/users/${userId}`, {
@@ -108,25 +132,25 @@ document.addEventListener('DOMContentLoaded', async function () {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ role: newRole }),
+                    body: JSON.stringify({ role: newRole, password: newPassword }),
                 });
 
                 const data = await response.json();
                 if (response.ok) {
-                    alert('User role updated successfully.');
+                    alert('User updated successfully.');
                     fetchUsers();
                 } else {
-                    alert(data.error || 'Failed to update user role.');
+                    alert(data.error || 'Failed to update user.');
                 }
             } catch (error) {
-                alert('An error occurred while updating user role.');
+                alert('An error occurred while updating user.');
             }
 
-            document.body.removeChild(roleDialog); // 移除对话框
+            document.body.removeChild(editDialog); // 移除对话框
         });
 
-        document.getElementById('cancelRoleBtn').addEventListener('click', () => {
-            document.body.removeChild(roleDialog); // 移除对话框
+        document.getElementById('cancelEditBtn').addEventListener('click', () => {
+            document.body.removeChild(editDialog); // 移除对话框
         });
     }
 
