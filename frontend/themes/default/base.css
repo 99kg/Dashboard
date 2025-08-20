@@ -1143,3 +1143,11 @@ body {
 .chartjs-legend {
   display: none !important;
 }
+
+.downloadPdfBtn {
+    height: 66px;
+    padding: 12px 22px;
+    font-size: 15px;
+    cursor: pointer;
+	display: none;
+}

@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // 添加事件监听器
     endDateInput.addEventListener('change', validateDateInputs);
     refEndDateInput.addEventListener('change', validateDateInputs);
-    
+
     // 设置默认日期（昨天和前天）
     const today = new Date();
     const yesterday = new Date(today);
@@ -1008,4 +1008,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 初始化仪表板
     initializeDashboard();
+
+    var btn = document.getElementById('downloadPdfBtn');
+    if (btn) {
+        btn.onclick = function () {
+            var element = document.body;
+            // 获取今天日期
+            var today = new Date();
+            var yyyy = today.getFullYear();
+            var mm = String(today.getMonth() + 1).padStart(2, '0');
+            var dd = String(today.getDate()).padStart(2, '0');
+            var filename = `dashboard_${yyyy}${mm}${dd}.pdf`;
+
+            var opt = {
+                margin: 0,
+                filename: filename,
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 2 },
+                // jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' }
+                // 自定义宽高（单位mm）：format: [420, 297]
+                jsPDF: { unit: 'mm', format: [380, 490], orientation: 'landscape' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+    }
 });
