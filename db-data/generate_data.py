@@ -19,8 +19,8 @@ def generate_video_analysis_data():
         conn = psycopg2.connect(**DATABASE_CONFIG)
         cur = conn.cursor()
         
-        start_date = datetime(2020, 1, 1)
-        end_date = datetime(2025, 12, 31)
+        start_date = datetime(2023, 1, 1)
+        end_date = datetime(2025, 8, 31)
         current_date = start_date
         total_records = 0
         

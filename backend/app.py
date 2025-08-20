@@ -229,7 +229,6 @@ def update_last_login():
 #         cur.close()
 #         conn.close()
 
-
 @app.route("/api/alltime", methods=["GET"])
 @login_required
 def get_all_time():
@@ -700,6 +699,83 @@ def get_dashboard_data():
         female_percent_change = calc_percent_change(female_total, female_ref)
         minor_percent_change = calc_percent_change(minor_total, minor_ref)
 
+        # 返回结果
+        return jsonify(
+            {
+                "part1": {
+                    "total": total_visitors,
+                    "compare": reference_visitors,
+                    "percent_change": total_percent_change,
+                },
+                "part2": {"peak_period": peak_period, "low_period": low_period},
+                "part3": a6_stats,
+                "part4": a2_stats,
+                "part5": a3_stats,
+                "part6": a4_stats,
+                "part7": {
+                    "value": cold_storage,
+                    "comparison": cold_storage_ref,
+                    "percent_change": cold_storage_percent,
+                    "male": cold_storage_gender["male"],
+                    "female": cold_storage_gender["female"],
+                    "unknown": cold_storage_gender["unknown"],
+                },
+                "part8": {
+                    "value": a8_value,
+                    "comparison": a8_ref,
+                    "percent_change": a8_percent,
+                    "male": a8_gender["male"],
+                    "female": a8_gender["female"],
+                    "unknown": a8_gender["unknown"],
+                },
+                "part9": {
+                    "value": canteen_value,
+                    "comparison": canteen_ref,
+                    "percent_change": canteen_percent,
+                    "male": canteen_gender["male"],
+                    "female": canteen_gender["female"],
+                    "unknown": canteen_gender["unknown"],
+                },
+                "part10": {
+                    "value": second_floor_value,
+                    "comparison": second_floor_ref,
+                    "percent_change": second_floor_percent,
+                    "male": second_floor_gender["male"],
+                    "female": second_floor_gender["female"],
+                    "unknown": second_floor_gender["unknown"],
+                },
+                "part11": {
+                    "male": {
+                        "current": male_total,
+                        "ref": male_ref,
+                        "percent_change": male_percent_change,
+                    },
+                    "female": {
+                        "current": female_total,
+                        "ref": female_ref,
+                        "percent_change": female_percent_change,
+                    },
+                    "children": {
+                        "current": minor_total,
+                        "ref": minor_ref,
+                        "percent_change": minor_percent_change,
+                    },
+                },
+            }
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route("/api/footfall-distribution", methods=["GET"])
+@login_required
+def get_footfall_distribution():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
         # part 12
         # ----------- Part 12 统计 -----------
         today = date.today()
@@ -898,72 +974,7 @@ def get_dashboard_data():
             "yearly_current": yearly_current,
             "yearly_historical": yearly_historical,
         }
-
-        # 返回结果
-        return jsonify(
-            {
-                "part1": {
-                    "total": total_visitors,
-                    "compare": reference_visitors,
-                    "percent_change": total_percent_change,
-                },
-                "part2": {"peak_period": peak_period, "low_period": low_period},
-                "part3": a6_stats,
-                "part4": a2_stats,
-                "part5": a3_stats,
-                "part6": a4_stats,
-                "part7": {
-                    "value": cold_storage,
-                    "comparison": cold_storage_ref,
-                    "percent_change": cold_storage_percent,
-                    "male": cold_storage_gender["male"],
-                    "female": cold_storage_gender["female"],
-                    "unknown": cold_storage_gender["unknown"],
-                },
-                "part8": {
-                    "value": a8_value,
-                    "comparison": a8_ref,
-                    "percent_change": a8_percent,
-                    "male": a8_gender["male"],
-                    "female": a8_gender["female"],
-                    "unknown": a8_gender["unknown"],
-                },
-                "part9": {
-                    "value": canteen_value,
-                    "comparison": canteen_ref,
-                    "percent_change": canteen_percent,
-                    "male": canteen_gender["male"],
-                    "female": canteen_gender["female"],
-                    "unknown": canteen_gender["unknown"],
-                },
-                "part10": {
-                    "value": second_floor_value,
-                    "comparison": second_floor_ref,
-                    "percent_change": second_floor_percent,
-                    "male": second_floor_gender["male"],
-                    "female": second_floor_gender["female"],
-                    "unknown": second_floor_gender["unknown"],
-                },
-                "part11": {
-                    "male": {
-                        "current": male_total,
-                        "ref": male_ref,
-                        "percent_change": male_percent_change,
-                    },
-                    "female": {
-                        "current": female_total,
-                        "ref": female_ref,
-                        "percent_change": female_percent_change,
-                    },
-                    "children": {
-                        "current": minor_total,
-                        "ref": minor_ref,
-                        "percent_change": minor_percent_change,
-                    },
-                },
-                "part12": part12,
-            }
-        )
+        return jsonify(part12)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:

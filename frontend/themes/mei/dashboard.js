@@ -40,7 +40,6 @@ function updateLastLoginTime() {
         });
 }
 
-// dashboard.js - 智能分析仪表板脚本
 document.addEventListener('DOMContentLoaded', function () {
 
     // 首先更新登录时间
@@ -56,8 +55,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    let dashboardChart = null;
-
+    // 页面加载时只请求一次 Weekly Footfall Distribution Overal 数据
+    fetch('/api/footfall-distribution')
+        .then(res => res.json())
+        .then(data => {
+            window.footfallDistributionData = data;
+            setCharts(data, 'weekly_current');
+        });
+    
     // 获取DOM元素
     const startTimeInput = document.getElementById('startTimeInput');
     const endTimeInput = document.getElementById('endTimeInput');
@@ -237,9 +242,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             hideLoading('part11');
         }
-
-        // 更新Weekly Footfall Distribution Overal区域
-        setCharts(data.part12);
 
     }
 
@@ -500,13 +502,17 @@ document.addEventListener('DOMContentLoaded', function () {
             ref_date_end: refEndDate + ' ' + endTime,
         };
 
+        console.log('请求参数:', params); // 调试用
+
         // 获取并显示仪表板数据
         fetchDashboardData(params)
             .then(data => {
+                console.log('后端返回数据:', data); // 调试用
                 displayResults(data);
             })
             .catch(error => {
-                console.error('获取仪表板数据时出错:', error);
+                console.error('获取仪表板数据时出错:', error); // 调试用
+
                 // 处理错误情况
                 for (let i = 1; i <= 11; i++) {
                     const card = document.getElementById(`part${i}`);
@@ -528,21 +534,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
         fetchAllTime(startDate, endDate)
             .then(timeSlots => {
-                // 添加null检查
-                if (startTimeInput) startTimeInput.innerHTML = '';
-                if (endTimeInput) endTimeInput.innerHTML = '';
 
                 // 保存当前选中的值
                 const currentStartTime = startTimeInput.value;
                 const currentEndTime = endTimeInput.value;
 
-                // 清空下拉框
-                if (startTimeInput) {
-                    startTimeInput.innerHTML = '';
-                }
-                if (endTimeInput) {
-                    endTimeInput.innerHTML = '';
-                }
+                // 清空并重新填充选项
+                startTimeInput.innerHTML = '';
+                endTimeInput.innerHTML = '';
 
                 // 添加时间段选项
                 timeSlots.forEach(slot => {
@@ -636,26 +635,36 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        endDateInput.addEventListener('change', function () {
-            updateTimeSelectors();
-        });
+        if (endDateInput) {
+            endDateInput.addEventListener('change', function () {
+                updateTimeSelectors();
+            });
+        }
 
-        refStartDateInput.addEventListener('change', function () {
-            getDataAndUpdateUI();
-        });
+        if (refStartDateInput) {
+            refStartDateInput.addEventListener('change', function () {
+                updateTimeSelectors();
+            });
+        }
 
-        refEndDateInput.addEventListener('change', function () {
-            getDataAndUpdateUI();
-        });
+        if (refEndDateInput) {
+            refEndDateInput.addEventListener('change', function () {
+                updateTimeSelectors();
+            });
+        }
 
-        startTimeInput.addEventListener('change', function () {
-            updateEndTimeOptions();
-            getDataAndUpdateUI();
-        });
+        if (startTimeInput) {
+            startTimeInput.addEventListener('change', function () {
+                updateEndTimeOptions();
+                getDataAndUpdateUI();
+            });
+        }
 
-        endTimeInput.addEventListener('change', function () {
-            getDataAndUpdateUI();
-        });
+        if (endTimeInput) {
+            endTimeInput.addEventListener('change', function () {
+                getDataAndUpdateUI();
+            });
+        }
     }
 
     // 初始化仪表板图表函数
@@ -680,7 +689,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const today = new Date();
         let labels = [];
 
-        // 获取星期几的缩写
+        // 获取星期缩写
         function getDayAbbreviation(dayIndex) {
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             return days[dayIndex];
@@ -871,31 +880,31 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.classList.add('active');
 
             // 切换数据
-            if (!window.dashboardData) return; // 确保数据已加载
+            if (!window.footfallDistributionData) return; // 确保数据已加载
             switch (btn.id) {
                 case 'historical-weekly-btn':
-                    setCharts(window.dashboardData.part12, 'weekly_historical');
+                    setCharts(window.footfallDistributionData, 'weekly_historical');
                     break;
                 case 'historical-monthly-btn':
-                    setCharts(window.dashboardData.part12, 'monthly_historical');
+                    setCharts(window.footfallDistributionData, 'monthly_historical');
                     break;
                 case 'historical-quarterly-btn':
-                    setCharts(window.dashboardData.part12, 'quarterly_historical');
+                    setCharts(window.footfallDistributionData, 'quarterly_historical');
                     break;
                 case 'historical-yearly-btn':
-                    setCharts(window.dashboardData.part12, 'yearly_historical');
+                    setCharts(window.footfallDistributionData, 'yearly_historical');
                     break;
                 case 'current-weekly-btn':
-                    setCharts(window.dashboardData.part12, 'weekly_current');
+                    setCharts(window.footfallDistributionData, 'weekly_current');
                     break;
                 case 'current-monthly-btn':
-                    setCharts(window.dashboardData.part12, 'monthly_current');
+                    setCharts(window.footfallDistributionData, 'monthly_current');
                     break;
                 case 'current-quarterly-btn':
-                    setCharts(window.dashboardData.part12, 'quarterly_current');
+                    setCharts(window.footfallDistributionData, 'quarterly_current');
                     break;
                 case 'current-yearly-btn':
-                    setCharts(window.dashboardData.part12, 'yearly_current');
+                    setCharts(window.footfallDistributionData, 'yearly_current');
                     break;
             }
         });
