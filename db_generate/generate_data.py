@@ -1,7 +1,6 @@
 import psycopg2
 from datetime import datetime, timedelta
 import random
-import math
 import time
 
 # 数据库配置
@@ -13,13 +12,97 @@ DATABASE_CONFIG = {
     "dbname": "postgres"
 }
 
+def setup_database():
+    """创建表和索引"""
+    create_table_sql = """
+    -- DROP TABLE
+    DROP TABLE IF EXISTS public.run_records CASCADE;
+    DROP TABLE IF EXISTS public.video_analysis CASCADE;
+    DROP TABLE IF EXISTS public.users CASCADE;
+
+    -- CREATE TABLE
+    CREATE TABLE public.run_records(
+        run_id serial NOT NULL,
+        folder_path character varying(255) NOT NULL,
+        run_date timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP(0) NOT NULL,
+        total_videos integer NOT NULL,
+        PRIMARY KEY (run_id)
+    );
+
+    -- CREATE TABLE
+    CREATE TABLE public.video_analysis (
+        analysis_id serial NOT NULL,
+        run_id integer,
+        video_name character varying(50) NOT NULL,
+        camera_name character varying(20),
+        start_time timestamp(0) without time zone,
+        end_time timestamp(0) without time zone,
+        total_people integer NOT NULL,
+        in_count integer NOT NULL,
+        out_count integer NOT NULL,
+        male_count integer NOT NULL,
+        female_count integer NOT NULL,
+        unknown_gender_count integer NOT NULL,
+        adult_count integer NOT NULL,
+        minor_count integer NOT NULL,
+        unknown_age_count integer NOT NULL,
+        detection_method character varying(50) DEFAULT 'horizontal_a' NOT NULL,
+        line_position numeric(3, 2) DEFAULT 0.5 NOT NULL,
+        analysis_time timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP(0) NOT NULL,
+        PRIMARY KEY (analysis_id)
+    );
+
+    -- CREATE INDEX
+    CREATE INDEX idx_run_records_date ON run_records(run_date);
+    CREATE INDEX idx_video_analysis_run ON video_analysis(run_id);
+    CREATE INDEX idx_video_analysis_start_time ON video_analysis(start_time);
+    CREATE INDEX idx_video_analysis_end_time ON video_analysis(end_time);
+    CREATE INDEX idx_video_analysis_camera ON video_analysis(camera_name);
+    CREATE INDEX idx_video_analysis_start_time_gender ON video_analysis (start_time, male_count, female_count, minor_count, unknown_gender_count);
+    CREATE INDEX idx_video_analysis_start_date ON video_analysis ((start_time::date));
+    CREATE INDEX idx_video_analysis_end_date ON video_analysis ((end_time::date));
+    CREATE INDEX idx_video_analysis_start_time_camera ON video_analysis (start_time, camera_name);
+    CREATE INDEX idx_video_analysis_year_month ON video_analysis (EXTRACT(YEAR FROM start_time), EXTRACT(MONTH FROM start_time));
+    CREATE INDEX idx_video_analysis_year_quarter ON video_analysis (EXTRACT(YEAR FROM start_time), EXTRACT(QUARTER FROM start_time));
+    CREATE INDEX idx_video_analysis_year ON video_analysis (EXTRACT(YEAR FROM start_time));
+
+    -- CREATE TABLE
+    CREATE TABLE public.users( 
+        id SERIAL PRIMARY KEY,
+        username VARCHAR (50) UNIQUE NOT NULL,
+        password_hash VARCHAR (128) NOT NULL,
+        role VARCHAR (20) NOT NULL DEFAULT 'user',
+        last_login timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP(0) NOT NULL
+    );
+
+    -- INSERT DATA
+    INSERT INTO users(username, password_hash, role) 
+    VALUES ( 
+        'admin',
+        '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9',
+        'admin'
+    );
+    """
+    try:
+        conn = psycopg2.connect(**DATABASE_CONFIG)
+        cur = conn.cursor()
+        cur.execute(create_table_sql)
+        conn.commit()
+        print("数据库表和索引创建完成")
+        cur.close()
+    except Exception as e:
+        print(f"数据库初始化出错: {e}")
+    finally:
+        if conn is not None:
+            conn.close()
+
 def generate_video_analysis_data():
     """生成并插入video_analysis表的数据"""
     try:
         conn = psycopg2.connect(**DATABASE_CONFIG)
         cur = conn.cursor()
         
-        start_date = datetime(2023, 1, 1)
+        start_date = datetime(2020, 1, 1)
         end_date = datetime(2025, 8, 31)
         current_date = start_date
         total_records = 0
@@ -117,45 +200,11 @@ def generate_video_analysis_data():
         if conn is not None:
             conn.close()
 
-def insert_static_data():
-    """插入静态数据"""
-    try:
-        conn = psycopg2.connect(**DATABASE_CONFIG)
-        cur = conn.cursor()
-        
-        # 插入run_records数据
-        cur.execute(
-            """
-            INSERT INTO public.run_records(folder_path, run_date, total_videos) 
-            VALUES (%s, %s, %s)
-            """,
-            ('./input', datetime(2025, 8, 1, 9, 44, 0), 17664)
-        )
-        
-        # 插入users数据
-        cur.execute(
-            """
-            INSERT INTO users(username, password_hash, role) 
-            VALUES (%s, %s, %s)
-            """,
-            ('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin')
-        )
-        
-        conn.commit()
-        print("静态数据插入完成")
-        cur.close()
-        
-    except Exception as e:
-        print(f"静态数据插入出错: {e}")
-    finally:
-        if conn is not None:
-            conn.close()
-
 if __name__ == "__main__":
-    # 先插入静态数据
-    insert_static_data()
+    # 初始化数据库
+    setup_database()
     
-    # 然后生成动态数据
+    # 生成动态数据
     start_time = time.time()
     generate_video_analysis_data()
     end_time = time.time()

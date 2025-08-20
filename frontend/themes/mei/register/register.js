@@ -9,7 +9,7 @@ document.getElementById("registerForm").addEventListener("submit", async functio
     const errorMessage = document.getElementById("errorMessage");
 
     if (password !== confirmPassword) {
-        errorMessage.textContent = "Passwords do not match.";
+        errorMessage.textContent = "User passwords do not match.";
         errorMessage.style.display = "block";
         return;
     }

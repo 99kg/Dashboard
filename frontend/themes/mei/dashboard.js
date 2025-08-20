@@ -199,8 +199,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.part1.percent_change > 0) {
                 $('.compare_up').show();
                 $('#part1-change').css('color', '#15AD63');
-                arrowIcon.src = './themes/default/images/icon_sanjiaoxing_top_green.png';
-                arrowIcon.style.display = 'inline'; // 确保箭头显示
                 $('.compare_up').attr('src', './themes/default/images/icon_sanjiaoxing_top_green.png');
             } else if (data.part1.percent_change < 0) {
                 $('.compare_up').show();
