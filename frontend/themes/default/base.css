@@ -1059,7 +1059,7 @@ body {
 }
 
 .logout-area {
-    transform: translateX(-60px); 
+    transform: translate(-60px, 10px); 
 }
 
 .logout-content {
@@ -1068,6 +1068,7 @@ body {
     gap: 20px;
     flex-wrap: nowrap;
 	align-items: flex-end;
+	color: rgb(203, 203, 203);
 }
 .user-info {
     display: flex;
@@ -1076,12 +1077,13 @@ body {
 }
 
 #logoutBtn {
-    background: #dc2d65;
+    background: #888687;
     color: white;
     border: none;
     padding: 5px 10px;
     border-radius: 4px;
     cursor: pointer;
+	margin-left: 20px;
 }
 
 .menucontent-wrapper {

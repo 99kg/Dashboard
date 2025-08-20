@@ -919,9 +919,9 @@ def get_footfall_distribution():
             quarterly_historical["children"].append(row[2])
             quarterly_historical["unknown"].append(row[3])
 
-        # 7. yearly_current: 包含本年在内的前4年
+        # 7. yearly_current: 包含本年在内的前5年
         yearly_current = {"male": [], "female": [], "children": [], "unknown": []}
-        for i in range(3, -1, -1):
+        for i in range(4, -1, -1):
             y = today.year - i
             cur.execute(
                 """
@@ -941,9 +941,9 @@ def get_footfall_distribution():
             yearly_current["children"].append(row[2])
             yearly_current["unknown"].append(row[3])
 
-        # 8. yearly_historical: 不含本年在内的前6年
+        # 8. yearly_historical: 不含本年在内的前5年
         yearly_historical = {"male": [], "female": [], "children": [], "unknown": []}
-        for i in range(4, 0, -1):
+        for i in range(5, 0, -1):
             y = today.year - i
             cur.execute(
                 """

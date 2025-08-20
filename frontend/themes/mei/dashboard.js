@@ -55,14 +55,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // 页面加载时只请求一次 Weekly Footfall Distribution Overal 数据
-    fetch('/api/footfall-distribution')
-        .then(res => res.json())
-        .then(data => {
-            window.footfallDistributionData = data;
-            setCharts(data, 'weekly_current');
-        });
-    
     // 获取DOM元素
     const startTimeInput = document.getElementById('startTimeInput');
     const endTimeInput = document.getElementById('endTimeInput');
@@ -194,7 +186,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('#part1-change').css('color', '#DC2D65');
                 $('.compare_up').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
             } else {
-                part1Change.textContent = '';
+                part1Change.textContent = '0%';
+                $('#part1-change').css('color', '#7e797bff');
                 $('.compare_up').hide();
             }
 
@@ -225,20 +218,47 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('part11-male').textContent = data.part11.male.current || '-';
             const maleChange = document.getElementById('part11-male-change');
             maleChange.textContent = data.part11.male.percent_change ? `${data.part11.male.percent_change}%` : '-';
-            maleChange.className = data.part11.male.percent_change >= 0 ?
-                'result-value percent-positive' : 'result-value percent-negative';
+            if (data.part11.male.percent_change > 0) {
+                $('#part11-male-change').css('color', '#15AD63');
+                $('.value_up1').attr('src', './themes/default/images/icon_sanjiaoxing_top_green.png');
+            } else if (data.part11.male.percent_change < 0) {
+                $('#part11-male-change').css('color', '#DC2D65');
+                $('.value_up1').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
+            } else {
+                maleChange.textContent = '0%';
+                $('#part11-male-change').css('color', '#7e797bff');
+                $('.value_up1').hide();
+            }
 
             document.getElementById('part11-female').textContent = data.part11.female.current || '-';
             const femaleChange = document.getElementById('part11-female-change');
             femaleChange.textContent = data.part11.female.percent_change ? `${data.part11.female.percent_change}%` : '-';
-            femaleChange.className = data.part11.female.percent_change >= 0 ?
-                'result-value percent-positive' : 'result-value percent-negative';
+            if (data.part11.female.percent_change > 0) {
+                $('#part11-female-change').css('color', '#15AD63');
+                $('.value_up2').attr('src', './themes/default/images/icon_sanjiaoxing_top_green.png');
+            } else if (data.part11.female.percent_change < 0) {
+                $('#part11-female-change').css('color', '#DC2D65');
+                $('.value_up2').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
+            } else {
+                femaleChange.textContent = '0%';
+                $('#part11-female-change').css('color', '#7e797bff');
+                $('.value_up2').hide();
+            }
 
             document.getElementById('part11-children').textContent = data.part11.children.current || '-';
             const childrenChange = document.getElementById('part11-children-change');
             childrenChange.textContent = data.part11.children.percent_change ? `${data.part11.children.percent_change}%` : '-';
-            childrenChange.className = data.part11.children.percent_change >= 0 ?
-                'result-value percent-positive' : 'result-value percent-negative';
+            if (data.part11.children.percent_change > 0) {
+                $('#part11-children-change').css('color', '#15AD63');
+                $('.value_up3').attr('src', './themes/default/images/icon_sanjiaoxing_top_green.png');
+            } else if (data.part11.children.percent_change < 0) {
+                $('#part11-children-change').css('color', '#DC2D65');
+                $('.value_up3').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
+            } else {
+                childrenChange.textContent = '0%';
+                $('#part11-children-change').css('color', '#7e797bff');
+                $('.value_up3').hide();
+            }
 
             hideLoading('part11');
         }
@@ -294,14 +314,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('.comparison_up4').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
             }
         } else {
-            changeElement.textContent = '';
+            changeElement.textContent = '0%';
             if (partId === 'part7') {
+                $('#part7-change').css('color', '#7e797bff');
                 $('.comparison_up1').hide();
             } else if (partId === 'part8') {
+                $('#part8-change').css('color', '#7e797bff');
                 $('.comparison_up2').hide();
             } else if (partId === 'part9') {
+                $('#part9-change').css('color', '#7e797bff');
                 $('.comparison_up3').hide();
             } else {
+                $('#part10-change').css('color', '#7e797bff');
                 $('.comparison_up4').hide();
             }
         }
@@ -502,16 +526,16 @@ document.addEventListener('DOMContentLoaded', function () {
             ref_date_end: refEndDate + ' ' + endTime,
         };
 
-        console.log('请求参数:', params); // 调试用
+        // console.log('请求参数:', params); // 调试用
 
         // 获取并显示仪表板数据
         fetchDashboardData(params)
             .then(data => {
-                console.log('后端返回数据:', data); // 调试用
+                // console.log('后端返回数据:', data); // 调试用
                 displayResults(data);
             })
             .catch(error => {
-                console.error('获取仪表板数据时出错:', error); // 调试用
+                console.error('获取仪表板数据时出错:', error);
 
                 // 处理错误情况
                 for (let i = 1; i <= 11; i++) {
@@ -872,6 +896,36 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    // 创建加载提示
+    const canvasContainer = document.getElementById("canvas_11").parentNode;
+    const loadingMessage = document.createElement("div");
+    loadingMessage.id = "loadingMessage";
+    loadingMessage.textContent = "Loading data, please wait...";
+    loadingMessage.style.position = "absolute";
+    loadingMessage.style.top = "50%";
+    loadingMessage.style.left = "50%";
+    loadingMessage.style.transform = "translate(-50%, -50%)";
+    loadingMessage.style.fontSize = "50px";
+    loadingMessage.style.color = "#555";
+    loadingMessage.style.textAlign = "center";
+    canvasContainer.style.position = "relative";
+    canvasContainer.appendChild(loadingMessage);
+
+    // 页面加载时只请求一次 Weekly Footfall Distribution Overal 数据
+    fetch('/api/footfall-distribution')
+        .then(res => res.json())
+        .then(data => {
+            window.footfallDistributionData = data;
+            setCharts(data, 'weekly_current');
+            // 数据加载完成后移除加载提示
+            loadingMessage.remove();
+        })
+        .catch(error => {
+            console.error('Error loading Weekly Footfall Distribution Overal data:', error);
+            loadingMessage.textContent = "Failed to load data.";
+            loadingMessage.style.color = "#DC2D65";
+        });
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function () {
