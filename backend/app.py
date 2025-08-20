@@ -149,6 +149,7 @@ def check_session():
             {
                 "authenticated": True,
                 "username": session.get("username"),
+                "role": session.get("role"),
                 "last_login": last_login,
             }
         )
@@ -1035,5 +1036,135 @@ def register():
         cur.close()
         conn.close()
 
+@app.route("/api/admin-login", methods=["POST"])
+def admin_login():
+    data = request.json
+    username = data.get("username")
+    password = data.get("password")
+
+    if not username or not password:
+        return jsonify({"success": False, "message": "Username and password are required."}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        # 查询用户信息
+        cur.execute(
+            "SELECT id, password_hash, role FROM users WHERE username = %s",
+            (username,),
+        )
+        user = cur.fetchone()
+
+        if not user:
+            return jsonify({"success": False, "message": "Invalid username or password."}), 401
+
+        user_id, password_hash, role = user
+
+        # 验证密码
+        hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        if hashed_password != password_hash:
+            return jsonify({"success": False, "message": "Invalid username or password."}), 401
+
+        # 检查角色是否为管理员
+        if role != "admin":
+            return jsonify({"success": False, "message": "Access denied. Only administrators can access the Admin Panel."}), 403
+
+        # 设置会话
+        session["user_id"] = user_id
+        session["username"] = username
+        session["role"] = role
+        session["logged_in"] = True
+
+        return jsonify({"success": True, "role": role})
+    except Exception as e:
+        return jsonify({"success": False, "message": "An error occurred."}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+@app.route("/admin", methods=["GET"])
+@login_required
+def admin_page():
+    if session.get("role") != "admin":
+        return jsonify({"error": "Access denied"}), 403
+    return send_from_directory(app.static_folder, "admin.html")
+
+@app.route("/api/admin/users", methods=["GET"])
+@login_required
+def get_users():
+    if session.get("role") != "admin":
+        return jsonify({"error": "Access denied"}), 403
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("SELECT id, username, role, last_login FROM users order by id")
+        users = [
+            {
+                "id": row[0],
+                "username": row[1],
+                "role": row[2],
+                "lastLogin": row[3].strftime("%Y/%m/%d %H:%M:%S") if row[3] else "Never",
+            }
+            for row in cur.fetchall()
+        ]
+        return jsonify({"users": users}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+@app.route("/api/admin/users/<int:user_id>", methods=["PUT"])
+@login_required
+def update_user_role(user_id):
+    current_user_id = session.get("user_id")
+    if user_id == current_user_id:
+        return jsonify({"error": "You cannot modify your own role."}), 403
+
+    data = request.json
+    new_role = data.get("role")
+
+    if new_role not in ["admin", "user"]:
+        return jsonify({"error": "Invalid role."}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("UPDATE users SET role = %s WHERE id = %s", (new_role, user_id))
+        conn.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route("/api/admin/users/<int:user_id>", methods=["DELETE"])
+@login_required
+def delete_user(user_id):
+    current_user_id = session.get("user_id")
+    if user_id == current_user_id:
+        return jsonify({"error": "You cannot delete your own account."}), 403
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        conn.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+        
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
