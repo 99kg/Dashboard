@@ -823,12 +823,6 @@ document.addEventListener('DOMContentLoaded', function () {
         // 创建多数据集
         const datasets = [
             {
-                label: 'Unknown',
-                data: data[type].unknown,
-                backgroundColor: '#DC2D65',
-                maxBarThickness: type.includes('monthly') ? 20 : 40
-            },
-            {
                 label: 'Male',
                 data: data[type].male,
                 backgroundColor: '#5D4EB5',
@@ -845,6 +839,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 data: data[type].children,
                 backgroundColor: '#24C4EF',
                 maxBarThickness: type.includes('monthly') ? 20 : 40
+            },
+            {
+                label: 'Unknown',
+                data: data[type].unknown,
+                backgroundColor: '#DC2D65',
+                maxBarThickness: type.includes('monthly') ? 20 : 40
             }
         ];
 
@@ -858,6 +858,15 @@ document.addEventListener('DOMContentLoaded', function () {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                legend: {
+                    display: true,
+                    position: 'right', // 正确的图例位置配置
+                    labels: {
+                        boxWidth: 20,
+                        padding: 15,
+                        fontSize: 14
+                    }
+                },
                 plugins: {
                     legend: {
                         display: true

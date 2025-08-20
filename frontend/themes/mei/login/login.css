@@ -83,25 +83,43 @@ input[type="password"]:focus {
     background-color: #ffffff;
 }
 
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
 button {
-    width: 100%;
+    flex: 1;
     padding: 14px;
-    background: linear-gradient(to right, #4e54c8, #8f94fb);
-    color: white;
     border: none;
     border-radius: 8px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
-    margin-top: 10px;
-    box-shadow: 0 4px 8px rgba(52, 77, 160, 0.3);
 }
 
-button:hover {
-    background: linear-gradient(to right, #3c43a4, #6c70d4);
+.btn-login {
+    background: linear-gradient(to right, #feb47b, #8f94fb); 
+    color: white;
+}
+
+.btn-login:hover {
+    background: linear-gradient(to right, #3c43a4, #f9a76d); 
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(52, 77, 160, 0.4);
+}
+
+.btn-register {
+    background: linear-gradient(to right, #8f94fb, #feb47b); 
+    color: white;
+}
+
+.btn-register:hover {
+    background: linear-gradient(to right, #e66b4c, #f9a76d); 
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(230, 107, 76, 0.4);
 }
 
 .error-message {
@@ -117,7 +135,7 @@ button:hover {
 
 .login-footer {
     margin-top: 30px;
-    color: #ffffff;
+    color: #141414;
     font-size: 14px;
     opacity: 0.8;
 }

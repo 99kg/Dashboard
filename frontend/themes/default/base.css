@@ -1068,7 +1068,7 @@ body {
     gap: 20px;
     flex-wrap: nowrap;
 	align-items: flex-end;
-	color: rgb(203, 203, 203);
+	color:#3c43a4;
 }
 .user-info {
     display: flex;

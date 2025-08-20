@@ -64,6 +64,9 @@ def index():
 def login_page():
     return send_from_directory(app.static_folder, "login.html")
 
+@app.route("/register", methods=["GET"])
+def register_page():
+    return send_from_directory(app.static_folder, "register.html")
 
 @app.route("/api/login", methods=["POST"])
 def login():
@@ -981,6 +984,56 @@ def get_footfall_distribution():
         cur.close()
         conn.close()
 
+@app.route("/api/register", methods=["POST"])
+def register():
+    data = request.json
+    username = data.get("username")
+    password = data.get("password")
+    admin_password = data.get("adminPassword")
+
+    if not username or not password or not admin_password:
+        return jsonify({"error": "All fields are required."}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        # 验证管理员密码
+        cur.execute(
+            "SELECT password_hash FROM users WHERE role = 'admin' LIMIT 1"
+        )
+        admin_password_hash = cur.fetchone()
+
+        if not admin_password_hash:
+            return jsonify({"error": "Admin password not found."}), 500
+
+        hashed_admin_password = hashlib.sha256(admin_password.encode()).hexdigest()
+        if hashed_admin_password != admin_password_hash[0]:
+            return jsonify({"error": "Invalid admin password."}), 403
+
+        # 检查用户名是否已存在
+        cur.execute("SELECT id FROM users WHERE username = %s", (username,))
+        if cur.fetchone():
+            return jsonify({"error": "User already exists."}), 409
+
+        # 创建新用户
+        hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        cur.execute(
+            """
+            INSERT INTO users (username, password_hash, role)
+            VALUES (%s, %s, 'user')
+            """,
+            (username, hashed_password),
+        )
+        conn.commit()
+
+        return jsonify({"message": "User registered successfully."}), 201
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
