@@ -38,6 +38,9 @@ CREATE TABLE public.video_analysis (
 -- CREATE INDEX
 CREATE INDEX idx_run_records_date ON run_records(run_date);
 CREATE INDEX idx_video_analysis_run ON video_analysis(run_id);
+CREATE INDEX idx_video_analysis_start_time ON video_analysis(start_time);
+CREATE INDEX idx_video_analysis_end_time ON video_analysis(end_time);
+CREATE INDEX idx_video_analysis_camera ON video_analysis(camera_name);
 
 -- INSERT DATA
 INSERT INTO public.run_records(folder_path, run_date, total_videos) 
