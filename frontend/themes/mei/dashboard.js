@@ -368,12 +368,14 @@ document.addEventListener('DOMContentLoaded', function () {
             { "product_name_en": "Female", "count_pauchase": stats.female },
             { "product_name_en": "Unknown", "count_pauchase": stats.unknown }
         ];
-        var a = new Array();
-        var b = new Array();
-        for (var i = 0; i < arr.length; i++) {
-            a.push(arr[i].product_name_en)
-            b.push(arr[i].count_pauchase)
+        if (arr.every(item => !item.count_pauchase)) {
+            arr = [
+                { "product_name_en": "No Data", "count_pauchase": 1 }
+            ];
         }
+
+        var a = arr.map(item => item.product_name_en);
+        var b = arr.map(item => item.count_pauchase);
 
         if (partId === 'part7') {
             var ctx_1 = document.getElementById("canvas_1");
@@ -387,12 +389,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         backgroundColor: [
                             'rgba(218, 18, 59, 1)',
                             'rgba(245, 97, 126, 1)',
-                            'rgba(255, 122, 147, 1)'
+                            'rgba(240, 193, 202, 1)'
                         ],
                         borderColor: [
                             'rgba(218, 18, 59, 1)',
                             'rgba(245, 97, 126, 1)',
-                            'rgba(255, 122, 147, 1)'
+                            'rgba(240, 193, 202, 1)'
                         ],
                         borderWidth: 1
                     }]
@@ -427,12 +429,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         backgroundColor: [
                             'rgba(19, 196, 196, 1)',
                             'rgba(74, 177, 177, 1)',
-                            'rgba(103, 232, 232, 1)'
+                            'rgba(29, 84, 84, 1)'
                         ],
                         borderColor: [
                             'rgba(19, 196, 196, 1)',
                             'rgba(74, 177, 177, 1)',
-                            'rgba(103, 232, 232, 1)'
+                            'rgba(29, 84, 84, 1)'
                         ],
                         borderWidth: 1
                     }]
@@ -756,6 +758,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+
         switch (type) {
             case 'weekly_current':
                 // 从今天开始往前6天（共7天），最右边是今天
@@ -784,19 +787,32 @@ document.addEventListener('DOMContentLoaded', function () {
                 break;
 
             case 'monthly_current':
-                // 当前月及前11个月（共12个月），最右边是当前月
-                for (let i = 11; i >= 0; i--) {
-                    const d = new Date(today);
-                    d.setMonth(today.getMonth() - i);
-                    const year = d.getFullYear();
-                    const monthName = monthNames[d.getMonth()];
-                    labels.push(`${year} ${monthName}`);
+                // 当前周及前3周（共4周），最右边是本周
+                for (let i = 3; i >= 0; i--) {
+                    const weekStart = new Date(today);
+                    weekStart.setDate(today.getDate() - today.getDay() - (7 * i));
+                    const weekEnd = new Date(weekStart);
+                    weekEnd.setDate(weekStart.getDate() + 6);
+
+                    labels.push(`Week ${i + 1} (${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()})`);
                 }
                 break;
 
             case 'monthly_historical':
-                // 前12个月（不含当前月），最右边是上个月
-                for (let i = 12; i >= 1; i--) {
+                // 前4周（不含本周），最右边是上周
+                for (let i = 4; i >= 1; i--) {
+                    const weekStart = new Date(today);
+                    weekStart.setDate(today.getDate() - today.getDay() - (7 * i));
+                    const weekEnd = new Date(weekStart);
+                    weekEnd.setDate(weekStart.getDate() + 6);
+
+                    labels.push(`Week ${i} (${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()})`);
+                }
+                break;
+
+            case 'quarterly_current':
+                // 当前月及前2个月（共3个月），最右边是本月
+                for (let i = 2; i >= 0; i--) {
                     const d = new Date(today);
                     d.setMonth(today.getMonth() - i);
                     const year = d.getFullYear();
@@ -805,52 +821,48 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 break;
 
-            case 'quarterly_current':
-                // 当前季度及前3个季度（共4个季度），最右边是当前季度
-                const currentQuarter = Math.floor(today.getMonth() / 3) + 1;
-                for (let i = 3; i >= 0; i--) {
-                    const quarter = currentQuarter - i;
-                    const year = today.getFullYear() - (quarter <= 0 ? 1 : 0);
-                    const quarterLabel = quarter > 0 ? `Q${quarter}` : `Q${quarter + 4}`;
-                    labels.push(`${year} ${quarterLabel}`);
-                }
-                break;
-
             case 'quarterly_historical':
-                // 前4个季度（不含当前季度），最右边是上个季度
-                const lastQuarter = Math.floor(today.getMonth() / 3);
-                for (let i = 4; i >= 1; i--) {
-                    const quarter = lastQuarter - i + 1;
-                    const year = today.getFullYear() - (quarter <= 0 ? 1 : 0);
-                    const quarterLabel = quarter > 0 ? `Q${quarter}` : `Q${quarter + 4}`;
-                    labels.push(`${year} ${quarterLabel}`);
+                // 前3个月（不含本月），最右边是上个月
+                for (let i = 3; i >= 1; i--) {
+                    const d = new Date(today);
+                    d.setMonth(today.getMonth() - i);
+                    const year = d.getFullYear();
+                    const monthName = monthNames[d.getMonth()];
+                    labels.push(`${year} ${monthName}`);
                 }
                 break;
 
             case 'yearly_current':
-                // 今年及前4年（共5年），最右边是今年
-                for (let i = 4; i >= 0; i--) {
-                    labels.push(`${today.getFullYear() - i}`);
+                // 当前季度及前3个季度（共4个季度），最右边是本季度
+                for (let i = 3; i >= 0; i--) {
+                    const q = Math.floor(today.getMonth() / 3) + 1 - i;
+                    const year = today.getFullYear() - (q <= 0 ? 1 : 0);
+                    const quarter = q > 0 ? q : q + 4;
+                    labels.push(`${year} Q${quarter}`);
                 }
                 break;
 
             case 'yearly_historical':
-                // 前5年（不含今年），最右边是去年
-                for (let i = 5; i >= 1; i--) {
-                    labels.push(`${today.getFullYear() - i}`);
+                // 前4个季度（不含本季度），最右边是上个季度
+                for (let i = 4; i >= 1; i--) {
+                    const q = Math.floor(today.getMonth() / 3) + 1 - i;
+                    const year = today.getFullYear() - (q <= 0 ? 1 : 0);
+                    const quarter = q > 0 ? q : q + 4;
+                    labels.push(`${year} Q${quarter}`);
                 }
                 break;
 
             default:
-                // 默认使用weekly_current格式
-                for (let i = 6; i >= 0; i--) {
-                    const d = new Date();
-                    d.setDate(d.getDate() - i);
-                    const month = d.getMonth() + 1;
-                    const date = d.getDate();
-                    const dayAbbr = getDayAbbreviation(d.getDay());
-                    labels.push(`${month}/${date} ${dayAbbr}`);
+                // 默认使用monthly_current格式
+                for (let i = 3; i >= 0; i--) {
+                    const weekStart = new Date(today);
+                    weekStart.setDate(today.getDate() - today.getDay() - (7 * i));
+                    const weekEnd = new Date(weekStart);
+                    weekEnd.setDate(weekStart.getDate() + 6);
+
+                    labels.push(`Week ${i + 1} (${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()})`);
                 }
+                break;
         }
 
         // 创建多数据集
@@ -959,12 +971,12 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(res => res.json())
         .then(data => {
             window.footfallDistributionData = data;
-            setCharts(data, 'weekly_current');
+            setCharts(data, 'monthly_current');
             // 数据加载完成后移除加载提示
             loadingMessage.remove();
         })
         .catch(error => {
-            console.error('Error loading Weekly Footfall Distribution Overal data:', error);
+            console.error('Error loading Monthly Footfall Distribution Overal data:', error);
             loadingMessage.textContent = "Failed to load data.";
             loadingMessage.style.color = "#DC2D65";
         });

@@ -800,7 +800,7 @@ def get_footfall_distribution():
                     COALESCE(SUM(unknown_gender_count),0)
                 FROM video_analysis
                 WHERE start_time::date = %s
-            """,
+                """,
                 (d,),
             )
             row = cur.fetchone()
@@ -823,7 +823,7 @@ def get_footfall_distribution():
                     COALESCE(SUM(unknown_gender_count),0)
                 FROM video_analysis
                 WHERE start_time::date = %s
-            """,
+                """,
                 (d,),
             )
             row = cur.fetchone()
@@ -832,12 +832,12 @@ def get_footfall_distribution():
             weekly_historical["children"].append(row[2])
             weekly_historical["unknown"].append(row[3])
 
-        # 3. monthly_current: 包含本月在内的前12月
+        # 3. monthly_current: 包含本周在内的前4周
         monthly_current = {"male": [], "female": [], "children": [], "unknown": []}
-        for i in range(11, -1, -1):
-            month = (today.replace(day=1) - timedelta(days=30 * i)).replace(day=1)
-            year = month.year
-            mon = month.month
+        for i in range(3, -1, -1):
+            week_start = today - timedelta(days=today.weekday() + (7 * i))
+            week_end = week_start + timedelta(days=6)
+
             cur.execute(
                 """
                 SELECT 
@@ -846,9 +846,9 @@ def get_footfall_distribution():
                     COALESCE(SUM(minor_count),0),
                     COALESCE(SUM(unknown_gender_count),0)
                 FROM video_analysis
-                WHERE EXTRACT(YEAR FROM start_time) = %s AND EXTRACT(MONTH FROM start_time) = %s
-            """,
-                (year, mon),
+                WHERE start_time::date BETWEEN %s AND %s
+                """,
+                (week_start, week_end),
             )
             row = cur.fetchone()
             monthly_current["male"].append(row[0])
@@ -856,12 +856,37 @@ def get_footfall_distribution():
             monthly_current["children"].append(row[2])
             monthly_current["unknown"].append(row[3])
 
-        # 4. monthly_historical: 不含本月的前12月
+        # 4. monthly_historical: 不含本周的前4周
         monthly_historical = {"male": [], "female": [], "children": [], "unknown": []}
-        for i in range(12, 0, -1):
-            month = (today.replace(day=1) - timedelta(days=30 * i)).replace(day=1)
-            year = month.year
-            mon = month.month
+        for i in range(4, 0, -1):
+            week_start = today - timedelta(days=today.weekday() + (7 * i))
+            week_end = week_start + timedelta(days=6)
+
+            cur.execute(
+                """
+                SELECT 
+                    COALESCE(SUM(male_count),0),
+                    COALESCE(SUM(female_count),0),
+                    COALESCE(SUM(minor_count),0),
+                    COALESCE(SUM(unknown_gender_count),0)
+                FROM video_analysis
+                WHERE start_time::date BETWEEN %s AND %s
+                """,
+                (week_start, week_end),
+            )
+            row = cur.fetchone()
+            monthly_historical["male"].append(row[0])
+            monthly_historical["female"].append(row[1])
+            monthly_historical["children"].append(row[2])
+            monthly_historical["unknown"].append(row[3])
+
+        # 5. quarterly_current: 包含本月在内的前3个月
+        quarterly_current = {"male": [], "female": [], "children": [], "unknown": []}
+        for i in range(2, -1, -1):
+            month_date = today.replace(day=1) - timedelta(days=30 * i)
+            year = month_date.year
+            mon = month_date.month
+
             cur.execute(
                 """
                 SELECT 
@@ -871,31 +896,8 @@ def get_footfall_distribution():
                     COALESCE(SUM(unknown_gender_count),0)
                 FROM video_analysis
                 WHERE EXTRACT(YEAR FROM start_time) = %s AND EXTRACT(MONTH FROM start_time) = %s
-            """,
+                """,
                 (year, mon),
-            )
-            row = cur.fetchone()
-            monthly_historical["male"].append(row[0])
-            monthly_historical["female"].append(row[1])
-            monthly_historical["children"].append(row[2])
-            monthly_historical["unknown"].append(row[3])
-
-        # 5. quarterly_current: 包含本季度在内的前4季度
-        quarterly_current = {"male": [], "female": [], "children": [], "unknown": []}
-        for i in range(3, -1, -1):
-            q_year = today.year - ((today.month - 1) // 3 < i)
-            q_num = ((today.month - 1) // 3 - i) % 4 + 1
-            cur.execute(
-                """
-                SELECT 
-                    COALESCE(SUM(male_count),0),
-                    COALESCE(SUM(female_count),0),
-                    COALESCE(SUM(minor_count),0),
-                    COALESCE(SUM(unknown_gender_count),0)
-                FROM video_analysis
-                WHERE EXTRACT(YEAR FROM start_time) = %s AND EXTRACT(QUARTER FROM start_time) = %s
-            """,
-                (q_year, q_num),
             )
             row = cur.fetchone()
             quarterly_current["male"].append(row[0])
@@ -903,11 +905,37 @@ def get_footfall_distribution():
             quarterly_current["children"].append(row[2])
             quarterly_current["unknown"].append(row[3])
 
-        # 6. quarterly_historical: 不含本季度的前4季度
+        # 6. quarterly_historical: 不含本月的前3个月
         quarterly_historical = {"male": [], "female": [], "children": [], "unknown": []}
-        for i in range(4, 0, -1):
+        for i in range(3, 0, -1):
+            month_date = today.replace(day=1) - timedelta(days=30 * i)
+            year = month_date.year
+            mon = month_date.month
+
+            cur.execute(
+                """
+                SELECT 
+                    COALESCE(SUM(male_count),0),
+                    COALESCE(SUM(female_count),0),
+                    COALESCE(SUM(minor_count),0),
+                    COALESCE(SUM(unknown_gender_count),0)
+                FROM video_analysis
+                WHERE EXTRACT(YEAR FROM start_time) = %s AND EXTRACT(MONTH FROM start_time) = %s
+                """,
+                (year, mon),
+            )
+            row = cur.fetchone()
+            quarterly_historical["male"].append(row[0])
+            quarterly_historical["female"].append(row[1])
+            quarterly_historical["children"].append(row[2])
+            quarterly_historical["unknown"].append(row[3])
+
+        # 7. yearly_current: 包含本季度在内的前4季度
+        yearly_current = {"male": [], "female": [], "children": [], "unknown": []}
+        for i in range(3, -1, -1):
             q_year = today.year - ((today.month - 1) // 3 < i)
             q_num = ((today.month - 1) // 3 - i) % 4 + 1
+
             cur.execute(
                 """
                 SELECT 
@@ -917,30 +945,8 @@ def get_footfall_distribution():
                     COALESCE(SUM(unknown_gender_count),0)
                 FROM video_analysis
                 WHERE EXTRACT(YEAR FROM start_time) = %s AND EXTRACT(QUARTER FROM start_time) = %s
-            """,
+                """,
                 (q_year, q_num),
-            )
-            row = cur.fetchone()
-            quarterly_historical["male"].append(row[0])
-            quarterly_historical["female"].append(row[1])
-            quarterly_historical["children"].append(row[2])
-            quarterly_historical["unknown"].append(row[3])
-
-        # 7. yearly_current: 包含本年在内的前5年
-        yearly_current = {"male": [], "female": [], "children": [], "unknown": []}
-        for i in range(4, -1, -1):
-            y = today.year - i
-            cur.execute(
-                """
-                SELECT 
-                    COALESCE(SUM(male_count),0),
-                    COALESCE(SUM(female_count),0),
-                    COALESCE(SUM(minor_count),0),
-                    COALESCE(SUM(unknown_gender_count),0)
-                FROM video_analysis
-                WHERE EXTRACT(YEAR FROM start_time) = %s
-            """,
-                (y,),
             )
             row = cur.fetchone()
             yearly_current["male"].append(row[0])
@@ -948,10 +954,12 @@ def get_footfall_distribution():
             yearly_current["children"].append(row[2])
             yearly_current["unknown"].append(row[3])
 
-        # 8. yearly_historical: 不含本年在内的前5年
+        # 8. yearly_historical: 不含本季度的前4季度
         yearly_historical = {"male": [], "female": [], "children": [], "unknown": []}
-        for i in range(5, 0, -1):
-            y = today.year - i
+        for i in range(4, 0, -1):
+            q_year = today.year - ((today.month - 1) // 3 < i)
+            q_num = ((today.month - 1) // 3 - i) % 4 + 1
+
             cur.execute(
                 """
                 SELECT 
@@ -960,9 +968,9 @@ def get_footfall_distribution():
                     COALESCE(SUM(minor_count),0),
                     COALESCE(SUM(unknown_gender_count),0)
                 FROM video_analysis
-                WHERE EXTRACT(YEAR FROM start_time) = %s
-            """,
-                (y,),
+                WHERE EXTRACT(YEAR FROM start_time) = %s AND EXTRACT(QUARTER FROM start_time) = %s
+                """,
+                (q_year, q_num),
             )
             row = cur.fetchone()
             yearly_historical["male"].append(row[0])

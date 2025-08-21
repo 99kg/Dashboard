@@ -855,13 +855,13 @@ select:focus {
 	height: 12px;
 	margin-top: 2px;
 	border-radius: 50%;
-	background-color: rgba(255, 122, 147, 1);
+	background-color: rgba(240, 193, 202, 1);
 }
 
 .importarea .subitem .subitem_right .barshow_area .item_name_1_children {
 	float: left;
 	line-height: 16px;
-	color: rgba(255, 122, 147, 1);
+	color: rgba(240, 193, 202, 1);
 	margin-left: 3px;
 }
 
@@ -903,13 +903,13 @@ select:focus {
 	height: 12px;
 	margin-top: 2px;
 	border-radius: 50%;
-	background-color: rgba(103, 232, 232, 1);
+	background-color: rgba(29, 84, 84, 1);
 }
 
 .importarea .subitem .subitem_right .barshow_area .item_name_2_children {
 	float: left;
 	line-height: 16px;
-	color: rgba(103, 232, 232, 1);
+	color: rgba(29, 84, 84, 1);
 	margin-left: 3px;
 }
 
