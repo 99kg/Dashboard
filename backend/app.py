@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from datetime import date, timedelta
 import hashlib
 import secrets
+from config import DATABASE_CONFIG
 
 # 加载环境变量
 load_dotenv()
@@ -29,18 +30,10 @@ app = Flask(__name__, static_folder=frontend_path, static_url_path="")
 app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(32))
 
 # 数据库配置
-DB_CONFIG = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "port": os.getenv("DB_PORT", "5432"),
-    "user": os.getenv("DB_USER", "postgres"),
-    "password": os.getenv("DB_PASSWORD", "postgres"),
-    "dbname": os.getenv("DB_NAME", "postgres"),
-}
-
+DB_CONFIG = DATABASE_CONFIG
 
 def get_db_connection():
     return psycopg2.connect(**DB_CONFIG)
-
 
 # 登录保护装饰器
 def login_required(f):
