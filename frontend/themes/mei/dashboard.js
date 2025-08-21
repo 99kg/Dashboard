@@ -30,13 +30,15 @@ function updateLastLoginTime() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('最后登录时间已更新');
+                // 最后登录时间已更新!
+                console.log('Last login time updated successfully!');
                 // 更新页面显示的最后登录时间
                 document.getElementById('lastLoginDisplay').textContent = data.new_last_login;
             }
         })
         .catch(error => {
-            console.error('更新最后登录时间时出错:', error);
+            // 更新最后登录时间时出错
+            console.error('Error occurred while updating last login time:', error);
         });
 }
 
@@ -121,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (element) {
             const resultValues = element.querySelectorAll('.result-value');
             resultValues.forEach(value => {
-                value.textContent = '加载中...';
+                value.textContent = '"Loading...';
                 value.classList.add('loading');
             });
         }
@@ -145,12 +147,14 @@ document.addEventListener('DOMContentLoaded', function () {
         return fetch(`/api/alltime?date_start=${dateStart}&date_end=${dateEnd}`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('网络响应异常');
+                    // 网络响应异常
+                    throw new Error('Network response exception!');
                 }
                 return response.json();
             })
             .catch(error => {
-                console.error('获取时间段时出错:', error);
+                // 获取时间段时出错
+                console.error('Error occurred while fetching time periods:', error);
                 throw error;
             });
     }
@@ -171,12 +175,14 @@ document.addEventListener('DOMContentLoaded', function () {
         })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('网络响应异常');
+                    // 网络响应异常
+                    throw new Error('Network response exception!');
                 }
                 return response.json();
             })
             .catch(error => {
-                console.error('获取仪表板数据时出错:', error);
+                // 获取仪表板数据时出错
+                console.error('Error occurred while fetching dashboard data:', error);
                 throw error;
             });
     }
@@ -561,16 +567,14 @@ document.addEventListener('DOMContentLoaded', function () {
             ref_date_end: refEndDate + ' ' + endTime,
         };
 
-        // console.log('请求参数:', params); // 调试用
-
         // 获取并显示仪表板数据
         fetchDashboardData(params)
             .then(data => {
-                // console.log('后端返回数据:', data); // 调试用
                 displayResults(data);
             })
             .catch(error => {
-                console.error('获取仪表板数据时出错:', error);
+                // 获取仪表板数据时出错
+                console.error('Error occurred while fetching dashboard data:', error);
 
                 // 处理错误情况
                 for (let i = 1; i <= 11; i++) {
@@ -578,7 +582,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (card) {
                         const resultValues = card.querySelectorAll('.result-value');
                         resultValues.forEach(value => {
-                            value.textContent = '加载失败';
+                            // 加载失败
+                            value.textContent = 'Failed to load data!';
                             value.classList.add('error');
                         });
                     }
@@ -638,13 +643,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 getDataAndUpdateUI();
             })
             .catch(error => {
-                console.error('获取时间段时出错:', error);
+                // 获取时间段时出错
+                console.error('Error occurred while fetching time periods:', error);
                 // 添加错误选项
                 startTimeInput.innerHTML = '';
                 endTimeInput.innerHTML = '';
                 const option = document.createElement('option');
                 option.value = '';
-                option.textContent = '错误：无法加载时间段';
+                // 错误：无法加载时间段
+                option.textContent = 'Error: Failed to load time periods!';
                 startTimeInput.appendChild(option);
                 endTimeInput.appendChild(option);
             });
@@ -680,7 +687,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // 添加null检查
         if (!startDateInput || !endDateInput || !refStartDateInput || !refEndDateInput || !startTimeInput || !endTimeInput) {
-            console.error("无法找到必要的DOM元素");
+            // 无法找到必要的DOM元素
+            console.error("Unable to find required DOM elements!");
             return;
         }
 

@@ -24,20 +24,23 @@ load_dotenv()
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 frontend_path = os.path.join(project_root, "frontend")
 
+#  创建Flask应用
 app = Flask(__name__, static_folder=frontend_path, static_url_path="")
 
-# 设置安全密钥
+# 设置安全密钥（在生产环境中，建议在 .env 文件中设置 SECRET_KEY 环境变量，以确保密钥在服务器重启后保持一致。如果每次服务器重启都生成新的密钥，那么所有用户的会话都会失效。）
 app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(32))
 
 # 数据库配置
 DB_CONFIG = DATABASE_CONFIG
 
+# 获取数据库连接
 def get_db_connection():
     return psycopg2.connect(**DB_CONFIG)
 
 # 登录保护装饰器
 def login_required(f):
     @wraps(f)
+    # 检查用户是否已登录
     def decorated_function(*args, **kwargs):
         if not session.get("logged_in"):
             return redirect(url_for("login_page"))
