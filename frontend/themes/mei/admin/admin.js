@@ -121,10 +121,19 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         document.body.appendChild(editDialog);
 
+        // 校验密码长度
+        const passwordInput = document.getElementById('passwordInput');
+
         // 添加事件监听
         document.getElementById('confirmEditBtn').addEventListener('click', async () => {
             const newRole = document.getElementById('roleSelect').value;
             const newPassword = document.getElementById('passwordInput').value;
+
+            if (passwordInput.value.length < 6 || passwordInput.value.length > 20) {
+                errorMessage.textContent = "Password must be between 6 and 20 characters long.";
+                errorMessage.style.display = "block";
+                return;
+            }
 
             try {
                 const response = await fetch(`/api/admin/users/${userId}`, {
@@ -137,13 +146,19 @@ document.addEventListener('DOMContentLoaded', async function () {
 
                 const data = await response.json();
                 if (response.ok) {
-                    alert('User updated successfully.');
+                    errorMessage.textContent = 'User updated successfully.';
+                    errorMessage.style.display = 'block';
+                    setTimeout(() => {
+                        errorMessage.style.display = 'none';
+                    }, 3000);
                     fetchUsers();
                 } else {
-                    alert(data.error || 'Failed to update user.');
+                    errorMessage.textContent = data.error || 'Failed to update user.';
+                    errorMessage.style.display = 'block';
                 }
             } catch (error) {
-                alert('An error occurred while updating user.');
+                errorMessage.textContent = 'An error occurred while updating user.';
+                errorMessage.style.display = 'block';
             }
 
             document.body.removeChild(editDialog); // 移除对话框
@@ -166,13 +181,19 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             const data = await response.json();
             if (response.ok) {
-                alert('User deleted successfully.');
+                errorMessage.textContent = 'User deleted successfully.';
+                errorMessage.style.display = 'block';
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, 3000);
                 fetchUsers();
             } else {
-                alert(data.error || 'Failed to delete user.');
+                errorMessage.textContent = data.error || 'Failed to delete user.';
+                errorMessage.style.display = 'block';
             }
         } catch (error) {
-            alert('An error occurred while deleting user.');
+            errorMessage.textContent = 'An error occurred while deleting user.';
+            errorMessage.style.display = 'block';
         }
     }
 

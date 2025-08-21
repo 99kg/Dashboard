@@ -1027,6 +1027,14 @@ def register():
         if cur.fetchone():
             return jsonify({"error": "User already exists."}), 409
 
+        # 校验用户名长度
+        if len(username) < 3 or len(username) > 20:
+            return jsonify({"error": "Username must be between 3 and 20 characters long."}), 400
+        
+        # 校验密码长度
+        if len(password) < 6 or len(password) > 20:
+            return jsonify({"error": "Password must be between 6 and 20 characters long."}), 400
+
         # 创建新用户
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         cur.execute(
@@ -1168,6 +1176,10 @@ def update_user(user_id):
 
     conn = get_db_connection()
     cur = conn.cursor()
+
+    # 校验密码长度
+    if new_password and (len(new_password) < 6 or len(new_password) > 20):
+        return jsonify({"error": "Password must be between 6 and 20 characters long."}), 400
 
     try:
         if new_password:

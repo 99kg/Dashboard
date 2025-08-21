@@ -758,7 +758,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-
         switch (type) {
             case 'weekly_current':
                 // 从今天开始往前6天（共7天），最右边是今天
@@ -787,28 +786,36 @@ document.addEventListener('DOMContentLoaded', function () {
                 break;
 
             case 'monthly_current':
-                // 当前周及前3周（共4周），最右边是本周
-                for (let i = 3; i >= 0; i--) {
-                    const weekStart = new Date(today);
-                    weekStart.setDate(today.getDate() - today.getDay() - (7 * i));
-                    const weekEnd = new Date(weekStart);
-                    weekEnd.setDate(weekStart.getDate() + 6);
+                {
+                    // 当前周及前3周（共4周），最右边是本周
+                    let w = 1;
+                    for (let i = 3; i >= 0; i--) {
+                        const weekStart = new Date(today);
+                        weekStart.setDate(today.getDate() - today.getDay() - (7 * i));
+                        const weekEnd = new Date(weekStart);
+                        weekEnd.setDate(weekStart.getDate() + 6);
 
-                    labels.push(`Week ${i + 1} (${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()})`);
+                        labels.push(`Week ${w} (${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()})`);
+                        w++;
+                    }
+                    break;
                 }
-                break;
 
             case 'monthly_historical':
-                // 前4周（不含本周），最右边是上周
-                for (let i = 4; i >= 1; i--) {
-                    const weekStart = new Date(today);
-                    weekStart.setDate(today.getDate() - today.getDay() - (7 * i));
-                    const weekEnd = new Date(weekStart);
-                    weekEnd.setDate(weekStart.getDate() + 6);
+                {
+                    // 前4周（不含本周），最右边是上周
+                    let w = 1;
+                    for (let i = 4; i >= 1; i--) {
+                        const weekStart = new Date(today);
+                        weekStart.setDate(today.getDate() - today.getDay() - (7 * i));
+                        const weekEnd = new Date(weekStart);
+                        weekEnd.setDate(weekStart.getDate() + 6);
 
-                    labels.push(`Week ${i} (${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()})`);
+                        labels.push(`Week ${w} (${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()})`);
+                        w++;
+                    }
+                    break;
                 }
-                break;
 
             case 'quarterly_current':
                 // 当前月及前2个月（共3个月），最右边是本月

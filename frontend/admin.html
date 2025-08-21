@@ -9,31 +9,31 @@
 </head>
 
 <body>
-    <div class="logout-area">
-        <div class="logout-content">
-            <div class="user-info">
-                <span id="usernameDisplay">Welcome, <span id="username">admin</span></span>
-                <button id="logoutBtn">Logout</button>
-            </div>
-        </div>
-    </div>
+
     <div class="login-container expanded-container">
         <div class="login-header">
             <div class="logo">
                 <img src="./themes/default/images/logo.png" />
             </div>
         </div>
-
         <h1 class="page-title">User Management</h1> <!-- 修改标题并加粗 -->
+        <div class="logout-area">
+            <div class="logout-content">
+                <div class="user-info">
+                    <span id="usernameDisplay">Welcome, <span id="username">admin</span></span>
+                    <button id="logoutBtn">Logout</button>
+                </div>
+            </div>
+        </div>
         <div id="userTableContainer" class="scrollable-container">
             <table id="userTable">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Username</th>
-                        <th>Role</th>
-                        <th>Last Login</th>
-                        <th>Actions</th>
+                        <th style="text-align: center;">ID</th>
+                        <th style="text-align: center;">Username</th>
+                        <th style="text-align: center;">Role</th>
+                        <th style="text-align: center;">Last Login</th>
+                        <th style="text-align: center;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -42,7 +42,7 @@
             </table>
         </div>
 
-        <div id="errorMessage" class="error-message"></div>
+        <div id="errorMessage" class="error-message-admin"></div>
 
         <div class="login-footer">
             <p>© 2025 JELIT MALL. All rights reserved.</p>

@@ -353,3 +353,34 @@ button {
 #cancelRoleBtn:hover {
     background-color: #E53935;
 }
+
+.error-message-admin {
+    position: fixed; /* 固定位置 */
+    top: 10px; /* 距离顶部 */
+    left: 50%; /* 居中 */
+    transform: translateX(-50%); /* 水平居中 */
+    background-color: #f8d7da; /* 错误背景色 */
+    color: #721c24; /* 错误文字颜色 */
+    padding: 10px 20px; /* 内边距 */
+    border: 1px solid #f5c6cb; /* 边框颜色 */
+    border-radius: 5px; /* 圆角 */
+    z-index: 1000; /* 确保在最上层 */
+    display: none; /* 默认隐藏 */
+}
+
+.top-right-corner {
+  top: 20px;
+  right: 20px;
+  font-size: 14px;
+  color: #666;
+  text-align: right;
+}
+
+.top-right-corner a {
+  text-decoration: none;
+  color: #337ab7;
+}
+
+.top-right-corner a:hover {
+  color: #23527c;
+}

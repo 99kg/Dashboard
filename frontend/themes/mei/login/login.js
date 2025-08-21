@@ -94,9 +94,15 @@ document.addEventListener('DOMContentLoaded', function () {
 function validateAdminCredentials() {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
+    const errorMessage = document.getElementById('errorMessage');
+
+    // 清除之前的错误消息
+    errorMessage.style.display = 'none';
+    errorMessage.textContent = '';
 
     if (!username || !password) {
-        alert('Please enter both username and password.');
+        errorMessage.textContent = 'Please enter both username and password.';
+        errorMessage.style.display = 'block';
         return;
     }
 
@@ -112,11 +118,13 @@ function validateAdminCredentials() {
             if (data.success && data.role === 'admin') {
                 window.location.href = '/admin';
             } else {
-                alert(data.message || 'Access denied. Only administrators can access the Admin Panel.');
+                errorMessage.textContent = data.message || 'Access denied. Only administrators can access the Admin Panel.';
+                errorMessage.style.display = 'block';
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while validating credentials.');
+            errorMessage.textContent = 'An error occurred while validating credentials.';
+            errorMessage.style.display = 'block';
         });
 }
