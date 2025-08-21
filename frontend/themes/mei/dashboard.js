@@ -205,9 +205,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('#part1-change').css('color', '#DC2D65');
                 $('.compare_up').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
             } else {
-                part1Change.textContent = '0%';
+                part1Change.textContent = '\u00A0\u00A00%';
                 $('#part1-change').css('color', '#7e797bff');
-                $('.compare_up').hide();
+                $('.compare_up').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
             }
 
             hideLoading('part1');
@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 maleChange.textContent = '0%';
                 $('#part11-male-change').css('color', '#7e797bff');
-                $('.value_up1').hide();
+                $('.value_up1').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
             }
 
             document.getElementById('part11-female').textContent = data.part11.female.current || '-';
@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 femaleChange.textContent = '0%';
                 $('#part11-female-change').css('color', '#7e797bff');
-                $('.value_up2').hide();
+                $('.value_up2').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
             }
 
             document.getElementById('part11-children').textContent = data.part11.children.current || '-';
@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 childrenChange.textContent = '0%';
                 $('#part11-children-change').css('color', '#7e797bff');
-                $('.value_up3').hide();
+                $('.value_up3').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
             }
 
             hideLoading('part11');
@@ -302,8 +302,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function fillAreaStats(partId, stats) {
-        document.getElementById(`${partId}-value`).textContent = stats.value || '-';
-        document.getElementById(`${partId}-comparison`).textContent = stats.comparison || '-';
+        document.getElementById(`${partId}-value`).textContent = stats.value || '0';
+        document.getElementById(`${partId}-comparison`).textContent = stats.comparison || '0';
         const changeElement = document.getElementById(`${partId}-change`);
         changeElement.textContent = stats.percent_change ? `\u00A0\u00A0${stats.percent_change}%` : '-';
         changeElement.className = stats.percent_change >= 0 ?
@@ -347,19 +347,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('.comparison_up4').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
             }
         } else {
-            changeElement.textContent = '0%';
+            changeElement.textContent = '\u00A0\u00A00%';
             if (partId === 'part7') {
                 $('#part7-change').css('color', '#7e797bff');
-                $('.comparison_up1').hide();
+                $('.comparison_up1').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
             } else if (partId === 'part8') {
                 $('#part8-change').css('color', '#7e797bff');
-                $('.comparison_up2').hide();
+                $('.comparison_up2').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
             } else if (partId === 'part9') {
                 $('#part9-change').css('color', '#7e797bff');
-                $('.comparison_up3').hide();
+                $('.comparison_up3').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
             } else {
                 $('#part10-change').css('color', '#7e797bff');
-                $('.comparison_up4').hide();
+                $('.comparison_up4').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
             }
         }
 
