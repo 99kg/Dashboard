@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // 简单的前端验证
         if (!username || !password) {
-            showError('Please enter both username and password');
+            showError('Please enter both username and password.');
             return;
         }
 
@@ -118,7 +118,7 @@ function validateAdminCredentials() {
             if (data.success && data.role === 'admin') {
                 window.location.href = '/admin';
             } else {
-                errorMessage.textContent = data.message || 'Access denied. Only administrators can access the Admin Panel.';
+                errorMessage.textContent = data.message || 'Access denied.';
                 errorMessage.style.display = 'block';
             }
         })

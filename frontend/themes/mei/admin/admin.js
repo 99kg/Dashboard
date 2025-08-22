@@ -56,7 +56,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             if (response.ok && data.users) {
                 populateUserTable(data.users);
-                errorMessage.style.display = 'none'; // 隐藏错误信息
+                setTimeout(() => {
+                    errorMessage.style.display = "none";
+                }, 1000); // 1秒后隐藏错误信息
             } else {
                 errorMessage.textContent = data.error || 'Failed to fetch users.';
                 errorMessage.style.display = 'block';
@@ -78,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 <td>${user.role}</td>
                 <td>${user.lastLogin}</td>
                 <td>
-                    <button class="action-btn edit" ${user.username === currentUsername ? 'disabled style="background-color: #ccc; cursor: not-allowed;"' : ''} data-id="${user.id}">Edit</button>
+                    <button class="action-btn edit" ${user.username === currentUsername ? 'disabled style="background-color: #ccc; cursor: not-allowed;"' : ''} data-id="${user.id}" data-role="${user.role}">Edit</button>
                     <button class="action-btn delete" ${user.username === currentUsername ? 'disabled style="background-color: #ccc; cursor: not-allowed;"' : ''} data-id="${user.id}">Delete</button>
                 </td>
             `;
@@ -98,6 +100,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // 编辑用户
     async function handleEditUser(event) {
         const userId = event.target.dataset.id;
+        const currentRole = event.target.dataset.role; // 获取当前用户角色
 
         // 创建角色和密码修改对话框
         const editDialog = document.createElement('div');
@@ -105,10 +108,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         editDialog.innerHTML = `
             <div class="dialog-content">
                 <h3>Edit User</h3>
+                <label for="usernameInput">Enter new username:</label>
+                <input type="text" id="usernameInput" placeholder="New username" />
                 <label for="roleSelect">Select new role:</label>
                 <select id="roleSelect">
-                    <option value="admin">admin</option>
-                    <option value="user">user</option>
+                    <option value="admin" ${currentRole === 'admin' ? 'selected' : ''}>admin</option>
+                    <option value="user" ${currentRole === 'user' ? 'selected' : ''}>user</option>
                 </select>
                 <label for="passwordInput">Enter new password:</label>
                 <input type="password" id="passwordInput" placeholder="New password" />
@@ -121,17 +126,31 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         document.body.appendChild(editDialog);
 
-        // 校验密码长度
+        // 校验用户名密码长度
+        const usernameInput = document.getElementById('usernameInput');
         const passwordInput = document.getElementById('passwordInput');
 
         // 添加事件监听
         document.getElementById('confirmEditBtn').addEventListener('click', async () => {
             const newRole = document.getElementById('roleSelect').value;
+            const newUsername = document.getElementById('usernameInput').value;
             const newPassword = document.getElementById('passwordInput').value;
 
-            if (passwordInput.value.length < 6 || passwordInput.value.length > 20) {
+            if (usernameInput.value && usernameInput.value.length < 3 || usernameInput.value.length > 20) {
+                errorMessage.textContent = "Username must be between 3 and 20 characters long.";
+                errorMessage.style.display = "block";
+                setTimeout(() => {
+                    errorMessage.style.display = "none";
+                }, 1000); // 1秒后隐藏错误信息
+                return;
+            }
+
+            if (passwordInput.value && passwordInput.value.length < 6 || passwordInput.value.length > 20) {
                 errorMessage.textContent = "Password must be between 6 and 20 characters long.";
                 errorMessage.style.display = "block";
+                setTimeout(() => {
+                    errorMessage.style.display = "none";
+                }, 1000); // 1秒后隐藏错误信息
                 return;
             }
 
@@ -141,7 +160,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ role: newRole, password: newPassword }),
+                    body: JSON.stringify({
+                        username: newUsername,
+                        role: newRole,
+                        password: newPassword,
+                    }),
                 });
 
                 const data = await response.json();
@@ -150,18 +173,23 @@ document.addEventListener('DOMContentLoaded', async function () {
                     errorMessage.style.display = 'block';
                     setTimeout(() => {
                         errorMessage.style.display = 'none';
-                    }, 3000);
+                    }, 1000);
                     fetchUsers();
+                    document.body.removeChild(editDialog); // 仅在成功时移除对话框
                 } else {
                     errorMessage.textContent = data.error || 'Failed to update user.';
                     errorMessage.style.display = 'block';
+                    setTimeout(() => {
+                        errorMessage.style.display = 'none';
+                    }, 1000); // 3秒后隐藏错误信息
                 }
             } catch (error) {
                 errorMessage.textContent = 'An error occurred while updating user.';
                 errorMessage.style.display = 'block';
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, 1000);
             }
-
-            document.body.removeChild(editDialog); // 移除对话框
         });
 
         document.getElementById('cancelEditBtn').addEventListener('click', () => {
@@ -185,15 +213,21 @@ document.addEventListener('DOMContentLoaded', async function () {
                 errorMessage.style.display = 'block';
                 setTimeout(() => {
                     errorMessage.style.display = 'none';
-                }, 3000);
+                }, 1000);
                 fetchUsers();
             } else {
                 errorMessage.textContent = data.error || 'Failed to delete user.';
                 errorMessage.style.display = 'block';
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, 1000);
             }
         } catch (error) {
             errorMessage.textContent = 'An error occurred while deleting user.';
             errorMessage.style.display = 'block';
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 1000);
         }
     }
 

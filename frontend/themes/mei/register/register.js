@@ -10,21 +10,18 @@ document.getElementById("registerForm").addEventListener("submit", async functio
 
     // 校验用户名长度
     if (username.length < 3 || username.length > 20) {
-        errorMessage.textContent = "Username must be between 3 and 20 characters long.";
-        errorMessage.style.display = "block";
+        showError("Username must be between 3 and 20 characters long.");
         return;
     }
 
     // 校验密码长度
     if (password.length < 6 || password.length > 20) {
-        errorMessage.textContent = "Password must be between 6 and 20 characters long.";
-        errorMessage.style.display = "block";
+        showError("Password must be between 6 and 20 characters long.");
         return;
     }
 
     if (password !== confirmPassword) {
-        errorMessage.textContent = "User passwords do not match.";
-        errorMessage.style.display = "block";
+        showError("User passwords do not match.");
         return;
     }
 
@@ -46,11 +43,33 @@ document.getElementById("registerForm").addEventListener("submit", async functio
                 window.location.href = "/login";
             }, 2000); // 延迟跳转以便用户看到消息
         } else {
-            errorMessage.textContent = data.error || "Registration failed.";
-            errorMessage.style.display = "block";
+            showError(data.error || "Registration failed.");
         }
     } catch (error) {
-        errorMessage.textContent = "An error occurred. Please try again.";
-        errorMessage.style.display = "block";
+        showError("An error occurred. Please try again.");
     }
 });
+
+// 显示错误消息的函数
+function showError(message) {
+    const errorMessage = document.getElementById("errorMessage");
+    errorMessage.textContent = message;
+    errorMessage.style.display = "block";
+
+    // 添加错误动画
+    errorMessage.style.animation = "none";
+    setTimeout(() => {
+        errorMessage.style.animation = "shake 0.5s";
+    }, 10);
+}
+
+// 为错误消息添加CSS动画
+const style = document.createElement("style");
+style.textContent = `
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20%, 60% { transform: translateX(-8px); }
+        40%, 80% { transform: translateX(8px); }
+    }
+`;
+document.head.appendChild(style);

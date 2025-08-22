@@ -33,9 +33,11 @@ app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(32))
 # 数据库配置
 DB_CONFIG = DATABASE_CONFIG
 
+
 # 获取数据库连接
 def get_db_connection():
     return psycopg2.connect(**DB_CONFIG)
+
 
 # 登录保护装饰器
 def login_required(f):
@@ -86,14 +88,14 @@ def login():
         user = cur.fetchone()
 
         if not user:
-            return jsonify({"error": "Invalid credentials"}), 401
+            return jsonify({"error": "Username does not exist."}), 401
 
         user_id, password_hash, role, last_login = user
 
         # 使用SHA-256哈希验证密码
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         if hashed_password != password_hash:
-            return jsonify({"error": "Invalid credentials"}), 401
+            return jsonify({"error": "Incorrect password."}), 401
 
         # 更新最后登录时间
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -111,10 +113,10 @@ def login():
         session["user_id"] = user_id
         session["username"] = username
         session["role"] = role
-        session["last_login"] = current_time
+        session["last_login"] = last_login
         session["logged_in"] = True
 
-        return jsonify({"message": "Login successful", "last_login": current_time}), 200
+        return jsonify({"message": "Login successful", "last_login": last_login}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
@@ -182,13 +184,13 @@ def update_last_login():
         conn.commit()
 
         # 更新会话中的最后登录时间
-        session["last_login"] = updated_last_login
+        session["last_login"] = current_time
 
         return (
             jsonify(
                 {
                     "success": True,
-                    "new_last_login": updated_last_login.strftime("%Y-%m-%d %H:%M:%S"),
+                    "new_last_login": current_time.strftime("%Y-%m-%d %H:%M:%S"),
                 }
             ),
             200,
@@ -636,20 +638,55 @@ def get_dashboard_data():
         # Part 7: Cold Storage (A7 and A6, 专用方法)
         cold_storage = get_cold_storage_net_count(date_start, date_end)
         cold_storage_ref = get_cold_storage_net_count(ref_date_start, ref_date_end)
+        # 确保cold_storage净流量不为负数
+        if cold_storage < 0:
+            cold_storage = 0
+        # 确保cold_storage_ref净流量不为负数
+        if cold_storage_ref < 0:
+            cold_storage_ref = 0
+
         cold_storage_percent = calc_percent_change(cold_storage, cold_storage_ref)
-        cold_storage_gender = get_cold_storage_gender_count(date_start, date_end)
+
+        if cold_storage == 0:
+            cold_storage_gender = {"male": 0, "female": 0, "unknown": 0}
+        else:
+            cold_storage_gender = get_cold_storage_gender_count(date_start, date_end)
 
         # Part 8: A8
         a8_value = get_net_count(["A8"], date_start, date_end)
         a8_ref = get_net_count(["A8"], ref_date_start, ref_date_end)
+
+        # 确保a8_value净流量不为负数
+        if a8_value < 0:
+            a8_value = 0
+        # 确保a8_ref净流量不为负数
+        if a8_ref < 0:
+            a8_ref = 0
+
         a8_percent = calc_percent_change(a8_value, a8_ref)
-        a8_gender = get_gender_net_count(["A8"], date_start, date_end)
+
+        if a8_value == 0:
+            a8_gender = {"male": 0, "female": 0, "unknown": 0}
+        else:
+            a8_gender = get_gender_net_count(["A8"], date_start, date_end)
 
         # Part 9: Canteen (A4 and A5)
         canteen_value = get_net_count(["A4", "A5"], date_start, date_end)
         canteen_ref = get_net_count(["A4", "A5"], ref_date_start, ref_date_end)
+
+        # 确保canteen_value净流量不为负数
+        if canteen_value < 0:
+            canteen_value = 0
+        # 确保canteen_ref净流量不为负数
+        if canteen_ref < 0:
+            canteen_ref = 0
+
         canteen_percent = calc_percent_change(canteen_value, canteen_ref)
-        canteen_gender = get_gender_net_count(["A4", "A5"], date_start, date_end)
+
+        if canteen_value == 0:
+            canteen_gender = {"male": 0, "female": 0, "unknown": 0}
+        else:
+            canteen_gender = get_gender_net_count(["A4", "A5"], date_start, date_end)
 
         # Part 10: 2nd Floor (A2, A3, A1, A6)
         second_floor_value = get_net_count(
@@ -658,10 +695,22 @@ def get_dashboard_data():
         second_floor_ref = get_net_count(
             ["A2", "A3", "A1", "A6"], ref_date_start, ref_date_end
         )
+
+        # 确保second_floor_value净流量不为负数
+        if second_floor_value < 0:
+            second_floor_value = 0
+        # 确保second_floor_ref净流量不为负数
+        if second_floor_ref < 0:
+            second_floor_ref = 0
+
         second_floor_percent = calc_percent_change(second_floor_value, second_floor_ref)
-        second_floor_gender = get_gender_net_count(
-            ["A2", "A3", "A1", "A6"], date_start, date_end
-        )
+
+        if second_floor_value == 0:
+            second_floor_gender = {"male": 0, "female": 0, "unknown": 0}
+        else:
+            second_floor_gender = get_gender_net_count(
+                ["A2", "A3", "A1", "A6"], date_start, date_end
+            )
 
         # Part 11: Gender breakdown
         cur.execute(
@@ -1025,11 +1074,21 @@ def register():
 
         # 校验用户名长度
         if len(username) < 3 or len(username) > 20:
-            return jsonify({"error": "Username must be between 3 and 20 characters long."}), 400
-        
+            return (
+                jsonify(
+                    {"error": "Username must be between 3 and 20 characters long."}
+                ),
+                400,
+            )
+
         # 校验密码长度
         if len(password) < 6 or len(password) > 20:
-            return jsonify({"error": "Password must be between 6 and 20 characters long."}), 400
+            return (
+                jsonify(
+                    {"error": "Password must be between 6 and 20 characters long."}
+                ),
+                400,
+            )
 
         # 创建新用户
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
@@ -1098,7 +1157,7 @@ def admin_login():
                 jsonify(
                     {
                         "success": False,
-                        "message": "Access denied. Only administrators can access the Admin Panel.",
+                        "message": "Access denied.",
                     }
                 ),
                 403,
@@ -1164,6 +1223,7 @@ def update_user(user_id):
         return jsonify({"error": "You cannot modify your own account."}), 403
 
     data = request.json
+    new_username = data.get("username")
     new_role = data.get("role")
     new_password = data.get("password")
 
@@ -1173,22 +1233,45 @@ def update_user(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
+    #校验用户名长度
+    if new_username and (len(new_username) < 3 or len(new_username) > 20):
+        return (
+            jsonify({"error": "Username must be between 3 and 20 characters long."}),
+            400,
+        )
+    
     # 校验密码长度
     if new_password and (len(new_password) < 6 or len(new_password) > 20):
-        return jsonify({"error": "Password must be between 6 and 20 characters long."}), 400
+        return (
+            jsonify({"error": "Password must be between 6 and 20 characters long."}),
+            400,
+        )
 
     try:
+        # 检查用户名是否已存在
+        cur.execute("SELECT id FROM users WHERE username = %s AND id != %s", (new_username, user_id))
+        if cur.fetchone():
+            return jsonify({"error": "Username already exists."}), 400
+        
+        if new_username:
+            cur.execute(
+                "UPDATE users SET username = %s WHERE id = %s",
+                (new_username, user_id),
+            )
+        
         if new_password:
             password_hash = hashlib.sha256(new_password.encode()).hexdigest()
             cur.execute(
-                "UPDATE users SET role = %s, password_hash = %s WHERE id = %s",
-                (new_role, password_hash, user_id),
+                "UPDATE users SET password_hash = %s WHERE id = %s",
+                (password_hash, user_id),
             )
-        else:
+
+        if new_role:
             cur.execute(
                 "UPDATE users SET role = %s WHERE id = %s",
                 (new_role, user_id),
             )
+
         conn.commit()
         return jsonify({"success": True})
     except Exception as e:
