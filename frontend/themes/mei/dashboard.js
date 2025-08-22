@@ -32,8 +32,6 @@ function updateLastLoginTime() {
             if (data.success) {
                 // 最后登录时间已更新!
                 console.log('Last login time updated successfully!');
-                // 更新页面显示的最后登录时间
-                document.getElementById('lastLoginDisplay').textContent = data.new_last_login;
             }
         })
         .catch(error => {

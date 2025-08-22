@@ -180,17 +180,12 @@ def update_last_login():
             (current_time, session["user_id"]),
         )
 
-        updated_last_login = cur.fetchone()[0]
         conn.commit()
-
-        # 更新会话中的最后登录时间
-        session["last_login"] = current_time
 
         return (
             jsonify(
                 {
                     "success": True,
-                    "new_last_login": current_time.strftime("%Y-%m-%d %H:%M:%S"),
                 }
             ),
             200,
@@ -1303,6 +1298,10 @@ def delete_user(user_id):
         cur.close()
         conn.close()
 
+# 处理Chrome DevTools请求
+@app.route('/.well-known/appspecific/com.chrome.devtools.json', methods=['GET'])
+def handle_chrome_devtools():
+    return jsonify({"message": "Not Found"}), 404
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5050, debug=True)
