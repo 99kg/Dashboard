@@ -1167,7 +1167,7 @@ body {
     margin-left: 20px; /* 与前面的字段保持间距 */
     margin-top: 18px; /* 微调垂直位置 */
     width: 120px; /* 固定宽度，避免拉伸 */
-	/* display: none; */
+	display: none;
 }
 
 .downloadPdfBtn:hover {

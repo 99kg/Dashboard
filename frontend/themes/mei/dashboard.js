@@ -1052,7 +1052,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 html2canvas: { scale: 2 },
                 // jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' }
                 // 自定义宽高（单位mm）：format: [420, 297]
-                jsPDF: { unit: 'mm', format: [380, 490], orientation: 'landscape' }
+                jsPDF: { unit: 'mm', format: [380, 500], orientation: 'landscape' }
             };
             html2pdf().set(opt).from(element).save();
         }
