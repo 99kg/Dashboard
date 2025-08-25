@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function fillAreaStats(partId, stats) {
         document.getElementById(`${partId}-value`).textContent = stats.value || '0';
-        document.getElementById(`${partId}-comparison`).textContent = stats.comparison || '0';
+        document.getElementById(`${partId}-comparison`).textContent = stats.comparison || '-';
         const changeElement = document.getElementById(`${partId}-change`);
         changeElement.textContent = stats.percent_change ? `\u00A0\u00A0${stats.percent_change}%` : '-';
         changeElement.className = stats.percent_change >= 0 ?

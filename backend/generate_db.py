@@ -101,7 +101,7 @@ def setup_database():
 
 
 def generate_video_analysis_data():
-    """生成并插入video_analysis表的数据"""
+    """生成并插入video_analysis表的数据（修复A6/A7逻辑）"""
     try:
         conn = psycopg2.connect(**DATABASE_CONFIG)
         cur = conn.cursor()
@@ -114,41 +114,64 @@ def generate_video_analysis_data():
         print(f"开始生成数据: {start_date} 到 {end_date}")
 
         while current_date <= end_date:
-            # 每天生成24小时 * 8个摄像头的数据
+            # 每天生成24小时的数据
             for hour in range(24):
+                # 先计算每个小时的总流量（独立于摄像头）
+                base_hour_flow = 10 + hour + random.uniform(-3, 3)
+
+                # 楼层间流量（二楼与一楼之间）
+                floor_flow = int(base_hour_flow * 0.6 + random.uniform(0, 5))
+
+                # 外部流量（一楼与外界）
+                external_in = int(base_hour_flow * 0.4 + random.uniform(0, 3))
+                external_out = int(base_hour_flow * 0.3 + random.uniform(0, 3))
+
+                # 按摄像头生成数据
                 for camera_num in range(1, 9):
                     camera_name = f"A{camera_num}"
 
-                    # 基本计数
-                    base_count = 5 + (camera_num - 1) * 2 + (hour / 2)
-                    base_count = max(5, min(50, base_count))
-                    base_count += random.uniform(-5, 5)
-                    base_count = max(5, base_count)
+                    # === 特殊处理A6(二楼)和A7(一楼)的流量关系 ===
+                    if camera_name == "A7":  # 一楼主出入口
+                        # 总进 = 外部进入 + 二楼下来的人
+                        in_count = external_in + floor_flow
+                        # 总出 = 离开大楼 + 前往二楼的人
+                        out_count = external_out + floor_flow
+                        total_people = in_count + out_count
 
-                    # 进出人数
-                    in_count = int(base_count * 0.6 + random.uniform(0, 5))
-                    out_count = int(base_count * 0.4 + random.uniform(0, 5))
-                    total_people = in_count + out_count + random.randint(0, 5)
+                    elif camera_name == "A6":  # 二楼出入口
+                        # 进出都等于楼层间流量
+                        in_count = floor_flow  # 进入二楼的人数
+                        out_count = floor_flow  # 离开二楼的人数
+                        total_people = in_count + out_count
 
-                    # 性别分布
+                    else:  # 其他普通摄像头
+                        base_count = 5 + (camera_num - 1) * 2 + (hour / 2)
+                        base_count = max(5, min(50, base_count))
+                        base_count += random.uniform(-5, 5)
+                        base_count = max(5, base_count)
+
+                        in_count = int(base_count * 0.6 + random.uniform(0, 5))
+                        out_count = int(base_count * 0.4 + random.uniform(0, 5))
+                        total_people = in_count + out_count
+                    # === 结束特殊处理 ===
+
+                    # 性别分布（所有摄像头通用逻辑）
                     male_count = int(total_people * 0.5 + random.uniform(-2.5, 2.5))
                     female_count = int(total_people * 0.3 + random.uniform(-2.5, 2.5))
                     unknown_gender_count = total_people - male_count - female_count
-
                     # 确保未知性别至少为1
                     if unknown_gender_count <= 0:
                         unknown_gender_count = 1
-                        female_count -= 1
+                        female_count = total_people - male_count - unknown_gender_count
 
-                    # 年龄分布
+                    # 年龄分布（所有摄像头通用逻辑）
                     adult_count = int(total_people * 0.6 + random.uniform(-2.5, 2.5))
                     minor_count = int(total_people * 0.2 + random.uniform(-2.5, 2.5))
                     unknown_age_count = total_people - adult_count - minor_count
-
                     # 确保未知年龄至少为1
                     if unknown_age_count <= 0:
                         unknown_age_count = 1
-                        minor_count -= 1
+                        minor_count = total_people - adult_count - unknown_age_count
 
                     # 创建视频文件名
                     video_name = (
@@ -203,8 +226,8 @@ def generate_video_analysis_data():
                         ),
                     )
 
-            # 每天结束后提交一次
-            if current_date.day % 10 == 0:  # 每10天提交一次
+            # 每10天提交一次
+            if current_date.day % 10 == 0:
                 conn.commit()
                 print(f"已提交数据到 {current_date.strftime('%Y-%m-%d')}")
 
