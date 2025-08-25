@@ -492,7 +492,7 @@ select:focus {
 
 .genderbreakdownarea .innercontent .genderbreakdowncontent .list .clumn_value {
 	float: left;
-	width: 28%;
+	width: 50%;
 	margin-left: 8px;
 }
 
