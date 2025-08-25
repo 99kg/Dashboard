@@ -141,7 +141,7 @@ def generate_video_analysis_data():
                     elif camera_name == "A6":  # 二楼出入口
                         # 进出都等于楼层间流量
                         in_count = floor_flow  # 进入二楼的人数
-                        out_count = floor_flow  # 离开二楼的人数
+                        out_count = floor_flow - 2   # 离开二楼的人数
                         total_people = in_count + out_count
 
                     else:  # 其他普通摄像头

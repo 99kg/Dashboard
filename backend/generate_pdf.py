@@ -236,7 +236,7 @@ def calculate_individual_stats(camera_name, date_str):
 
 def calculate_cold_storage_stats(date_str):
     """
-    计算冷库区域统计数据
+    计算冷库区域统计数据（包含性别和年龄分布）
     :param date_str: 日期字符串 (YYYY-MM-DD)
     :return: 包含统计数据的字典
     """
@@ -257,11 +257,20 @@ def calculate_cold_storage_stats(date_str):
         start_time = f"{date_str} 00:00:00"
         end_time = f"{date_str} 23:59:59"
         
-        # 计算净人数
+        # 初始化性别和年龄分布计数器
+        gender_data = {"male": 0.0, "female": 0.0, "unknown": 0.0}
+        minor_float = 0.0
+        
+        # 获取冷库区域的所有时间段数据
         cur.execute(
             """
             SELECT 
-                COALESCE(SUM(A7.in_count - A7.out_count + A6.out_count - A6.in_count), 0) AS net_flow
+                A7.start_time, A7.end_time,
+                A7.in_count, A7.out_count,
+                A7.male_count, A7.female_count, A7.unknown_gender_count, A7.minor_count, A7.total_people AS a7_total,
+                A6.in_count AS a6_in, A6.out_count AS a6_out,
+                A6.male_count AS a6_male, A6.female_count AS a6_female, 
+                A6.unknown_gender_count AS a6_unknown, A6.minor_count AS a6_minor, A6.total_people AS a6_total
             FROM video_analysis A7
             JOIN video_analysis A6 
                 ON A7.start_time = A6.start_time AND A7.end_time = A6.end_time
@@ -271,8 +280,95 @@ def calculate_cold_storage_stats(date_str):
             """,
             (start_time, end_time),
         )
-        net_flow = cur.fetchone()[0]
-        stats["total_people"] = max(0, net_flow)
+        rows = cur.fetchall()
+        
+        # 计算净流量和性别/年龄分布
+        for row in rows:
+            # 计算该时间段的冷库净流量
+            segment_net_flow = (row[2] - row[3]) + (row[10] - row[9])
+            
+            # 累加净流量
+            stats["total_people"] += segment_net_flow
+            
+            # 计算A7摄像头的性别/年龄贡献
+            if row[8] > 0:  # A7_total > 0
+                # A7进：正贡献
+                if row[2] > 0:
+                    in_ratio = row[2] / row[8]
+                    gender_data["male"] += row[4] * in_ratio
+                    gender_data["female"] += row[5] * in_ratio
+                    gender_data["unknown"] += row[6] * in_ratio
+                    minor_float += row[7] * in_ratio
+                
+                # A7出：负贡献
+                if row[3] > 0:
+                    out_ratio = row[3] / row[8]
+                    gender_data["male"] -= row[4] * out_ratio
+                    gender_data["female"] -= row[5] * out_ratio
+                    gender_data["unknown"] -= row[6] * out_ratio
+                    minor_float -= row[7] * out_ratio
+            
+            # 计算A6摄像头的性别/年龄贡献
+            if row[15] > 0:  # A6_total > 0
+                # A6出（进入冷库区域）：正贡献
+                if row[10] > 0:
+                    out_ratio = row[10] / row[15]
+                    gender_data["male"] += row[11] * out_ratio
+                    gender_data["female"] += row[12] * out_ratio
+                    gender_data["unknown"] += row[13] * out_ratio
+                    minor_float += row[14] * out_ratio
+                
+                # A6进（离开冷库区域）：负贡献
+                if row[9] > 0:
+                    in_ratio = row[9] / row[15]
+                    gender_data["male"] -= row[11] * in_ratio
+                    gender_data["female"] -= row[12] * in_ratio
+                    gender_data["unknown"] -= row[13] * in_ratio
+                    minor_float -= row[14] * in_ratio
+        
+        # 确保净流量非负
+        stats["total_people"] = max(0, stats["total_people"])
+        
+        # 四舍五入并分配余数
+        male_int = round(gender_data["male"])
+        female_int = round(gender_data["female"])
+        unknown_int = round(gender_data["unknown"])
+        minor_int = round(minor_float)
+
+        allocated = male_int + female_int + unknown_int
+        remainder = stats["total_people"] - allocated
+
+        # 按小数部分分配余数
+        fractions = {
+            "male": gender_data["male"] - male_int,
+            "female": gender_data["female"] - female_int,
+            "unknown": gender_data["unknown"] - unknown_int,
+        }
+        sorted_fractions = sorted(fractions.items(), key=lambda x: x[1], reverse=True)
+
+        for i in range(abs(remainder)):
+            key = sorted_fractions[i % 3][0]
+            if remainder > 0:
+                if key == "male":
+                    male_int += 1
+                elif key == "female":
+                    female_int += 1
+                else:
+                    unknown_int += 1
+            else:
+                if key == "male" and male_int > 0:
+                    male_int -= 1
+                elif key == "female" and female_int > 0:
+                    female_int -= 1
+                elif key == "unknown" and unknown_int > 0:
+                    unknown_int -= 1
+
+        stats["total_males"] = male_int
+        stats["total_females"] = female_int
+        stats["total_unknowns"] = unknown_int
+        stats["total_children"] = min(
+            max(0, minor_int), stats["total_people"]
+        )
 
         # 计算最高密度时段
         cur.execute(
@@ -335,7 +431,6 @@ def calculate_cold_storage_stats(date_str):
         conn.close()
 
     return stats
-
 
 def calculate_area_stats(area_name, cameras, date_str):
     """
