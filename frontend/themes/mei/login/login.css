@@ -114,6 +114,7 @@ button {
 .btn-register {
     background: linear-gradient(to right, #feb47b, #8f94fb); 
     color: white;
+    display: none; /* 默认隐藏注册按钮 */
 }
 
 .btn-register:hover {
@@ -132,6 +133,7 @@ button {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
+    display: none; /* 默认隐藏管理员按钮 */
 }
 
 .btn-admin:hover {
