@@ -1228,13 +1228,13 @@ def update_user(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    #校验用户名长度
+    # 校验用户名长度
     if new_username and (len(new_username) < 3 or len(new_username) > 20):
         return (
             jsonify({"error": "Username must be between 3 and 20 characters long."}),
             400,
         )
-    
+
     # 校验密码长度
     if new_password and (len(new_password) < 6 or len(new_password) > 20):
         return (
@@ -1244,16 +1244,19 @@ def update_user(user_id):
 
     try:
         # 检查用户名是否已存在
-        cur.execute("SELECT id FROM users WHERE username = %s AND id != %s", (new_username, user_id))
+        cur.execute(
+            "SELECT id FROM users WHERE username = %s AND id != %s",
+            (new_username, user_id),
+        )
         if cur.fetchone():
             return jsonify({"error": "Username already exists."}), 400
-        
+
         if new_username:
             cur.execute(
                 "UPDATE users SET username = %s WHERE id = %s",
                 (new_username, user_id),
             )
-        
+
         if new_password:
             password_hash = hashlib.sha256(new_password.encode()).hexdigest()
             cur.execute(
@@ -1298,10 +1301,12 @@ def delete_user(user_id):
         cur.close()
         conn.close()
 
+
 # 处理Chrome DevTools请求
-@app.route('/.well-known/appspecific/com.chrome.devtools.json', methods=['GET'])
+@app.route("/.well-known/appspecific/com.chrome.devtools.json", methods=["GET"])
 def handle_chrome_devtools():
     return jsonify({"message": "Not Found"}), 404
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5050, debug=True)
