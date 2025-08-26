@@ -65,6 +65,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 检查并修正日期
     function validateDateInputs() {
+        // 检查 Start Date 是否晚于 End Date 
+        if (startDateInput.value > endDateInput.value) {
+            endDateInput.value = startDateInput.value;
+        }
+
+        // 检查 Compare Start Date 是否晚于 Compare End Date
+        if (refStartDateInput.value > refEndDateInput.value) {
+            refEndDateInput.value = refStartDateInput.value;
+            refStartDateInput.value = refEndDateInput.value;
+        }
+        
         // 检查 End Date 是否早于 Start Date
         if (endDateInput.value < startDateInput.value) {
             endDateInput.value = startDateInput.value; // 强制设置为 Start Date
@@ -650,8 +661,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     // 尝试恢复之前的选择
                     if (currentEndTime && endTimeInput.querySelector(`option[value="${currentEndTime}"]`)) {
                         endTimeInput.value = currentEndTime;
-                    } else if (timeSlots.length > 0) {
-                        endTimeInput.value = timeSlots[0].end;
+                    } else {
+                        // 设置默认值为最后一项
+                        endTimeInput.value = timeSlots[timeSlots.length - 1].end;
                     }
                 }
 
