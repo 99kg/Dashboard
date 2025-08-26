@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function () {
             refEndDateInput.value = refStartDateInput.value;
             refStartDateInput.value = refEndDateInput.value;
         }
-        
+
         // 检查 End Date 是否早于 Start Date
         if (endDateInput.value < startDateInput.value) {
             endDateInput.value = startDateInput.value; // 强制设置为 Start Date
@@ -965,7 +965,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         stacked: false,
                         ticks: {
                             callback: function (value, index, values) {
-                                // if (index === values.length - 1) return '';
+                                if (index === values.length - 1) return '';
                                 return value;
                             }
                         }
@@ -976,6 +976,41 @@ document.addEventListener('DOMContentLoaded', function () {
                             beginAtZero: true
                         }
                     }]
+                },
+                // 修改setCharts函数中的animation.onComplete部分
+                animation: {
+                    onComplete: function () {
+                        const ctx = this.chart.ctx;
+                        ctx.save(); // 保存当前绘图状态
+
+                        // 1. 绘制柱状图上的数值标签
+                        ctx.font = Chart.helpers.fontString(12, 'bold', Chart.defaults.global.defaultFontFamily);
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        this.data.datasets.forEach(function (dataset, i) {
+                            const meta = this.getDatasetMeta(i);
+                            meta.data.forEach(function (bar, index) {
+                                const data = dataset.data[index];
+                                if (data) {
+                                    ctx.fillStyle = '#605f5fff';
+                                    ctx.fillText(data, bar._model.x, bar._model.y - 5);
+                                }
+                            });
+                        }, this);
+
+                        // 2. 获取最后一个刻度的位置和文本
+                        const xAxis = this.scales['x-axis-0'];
+                        const lastTickIndex = xAxis.ticks.length - 1;
+                        const lastTick = labels[labels.length - 1]; // 直接使用原始标签
+                        const lastTickX = xAxis.getPixelForTick(lastTickIndex);
+
+                        // 3. 绘制红色标签
+                        ctx.fillStyle = 'red';
+                        ctx.font = Chart.helpers.fontString(12, 'bold', Chart.defaults.global.defaultFontFamily);
+                        ctx.fillText(lastTick, lastTickX, xAxis.bottom - 8);
+
+                        ctx.restore(); // 恢复绘图状态
+                    }
                 }
             }
         });
