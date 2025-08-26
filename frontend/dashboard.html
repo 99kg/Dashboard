@@ -73,7 +73,8 @@
                             <div class="logout-area">
                                 <div class="logout-content">
                                     <div class="user-info">
-                                        <div><span id="usernameDisplay">admin</span><button class="logoutBtn" id="logoutBtn">Logout</button></div>
+                                        <div><span id="usernameDisplay">admin</span><button class="logoutBtn"
+                                                id="logoutBtn">Logout</button></div>
                                         <div>Last login: <span id="lastLoginDisplay">2025-08-18 16:18:37</span></div>
                                     </div>
                                 </div>
@@ -114,7 +115,7 @@
                             <div class="tablebox">
                                 <div class="subitem">
                                     <div class="subitem_left">
-                                        <div class="table_name">A6</div>
+                                        <div class="table_name camera-title" data-camera-id="A6">A6</div>
                                         <div class="table_num" id="part3-total">100</div>
                                     </div>
                                     <div class="subitem_right">
@@ -147,7 +148,7 @@
                             <div class="tablebox">
                                 <div class="subitem">
                                     <div class="subitem_left">
-                                        <div class="table_name">A2</div>
+                                        <div class="table_name camera-title" data-camera-id="A2">A2</div>
                                         <div class="table_num" id="part4-total">2000</div>
                                     </div>
                                     <div class="subitem_right">
@@ -182,7 +183,7 @@
                             <div class="tablebox">
                                 <div class="subitem">
                                     <div class="subitem_left">
-                                        <div class="table_name">A3</div>
+                                        <div class="table_name camera-title" data-camera-id="A3">A3</div>
                                         <div class="table_num" id="part5-total">1500</div>
                                     </div>
                                     <div class="subitem_right">
@@ -217,7 +218,7 @@
                             <div class="tablebox">
                                 <div class="subitem">
                                     <div class="subitem_left">
-                                        <div class="table_name">A4</div>
+                                        <div class="table_name camera-title" data-camera-id="A4">A4</div>
                                         <div class="table_num" id="part6-total">500</div>
                                     </div>
                                     <div class="subitem_right">
@@ -432,6 +433,20 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="list">
+                            <div class="clumn_name"><img src="./themes/default/images/gender_unknown.png" />
+                                <div class="text_name">Unknown</div>
+                            </div>
+                            <div class="clumn_value">
+                                <div class="value_pink" id="part11-unknown">100</div>
+                            </div>
+                            <div class="clumn_percent">
+                                <div class="percentright">
+                                    <div class="value_pink" id="part11-unknown-change">5%</div><img class="value_up4"
+                                        src="./themes/default/images/icon_sanjiaoxing_bottom_red.png">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -440,9 +455,9 @@
         <div class="weeklydistributionarea">
             <div class="innercontent">
                 <div class="section_title">
-                    <div class="floatleft">Weekly Footfall Distribution Overal</div>
+                    <div class="floatleft">Weekly Footfall Distribution Overall</div>
                 </div>
-                
+
                 <div style="float:left;width:100%;margin-top:10px;">
                     <div style="float:left;line-height:30px;padding:0px 12px;">Current&nbsp;&nbsp;&nbsp;&nbsp;</div>
                     <button class="tab-btn" id="current-weekly-btn">Weekly</button>
@@ -457,7 +472,7 @@
                     <button class="tab-btn" id="historical-quarterly-btn">Quarterly</button>
                     <button class="tab-btn" id="historical-yearly-btn">Yearly</button>
                 </div>
-                
+
                 <div style="float:left;width:100%;margin-top:20px;">
                     <div style="float:left;width:100%;">
                         <div style="float:left;width:100%;">

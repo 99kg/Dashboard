@@ -713,7 +713,8 @@ def get_dashboard_data():
             SELECT 
                 COALESCE(SUM(male_count), 0),
                 COALESCE(SUM(female_count), 0),
-                COALESCE(SUM(minor_count), 0)
+                COALESCE(SUM(minor_count), 0),
+                COALESCE(SUM(unknown_gender_count), 0)
             FROM video_analysis
             WHERE start_time >= %s AND end_time <= %s
         """,
@@ -723,6 +724,7 @@ def get_dashboard_data():
         male_total = gender_row[0]
         female_total = gender_row[1]
         minor_total = gender_row[2]
+        unknown_total = gender_row[3]
 
         # 参考时间段的性别统计
         cur.execute(
@@ -730,7 +732,8 @@ def get_dashboard_data():
             SELECT 
                 COALESCE(SUM(male_count), 0),
                 COALESCE(SUM(female_count), 0),
-                COALESCE(SUM(minor_count), 0)
+                COALESCE(SUM(minor_count), 0),
+                COALESCE(SUM(unknown_gender_count), 0)
             FROM video_analysis
             WHERE start_time >= %s AND end_time <= %s
         """,
@@ -740,11 +743,13 @@ def get_dashboard_data():
         male_ref = ref_gender_row[0]
         female_ref = ref_gender_row[1]
         minor_ref = ref_gender_row[2]
+        unknown_ref = ref_gender_row[3]
 
         # 计算百分比变化
         male_percent_change = calc_percent_change(male_total, male_ref)
         female_percent_change = calc_percent_change(female_total, female_ref)
         minor_percent_change = calc_percent_change(minor_total, minor_ref)
+        unknown_percent_change = calc_percent_change(unknown_total, unknown_ref)
 
         # 返回结果
         return jsonify(
@@ -806,6 +811,11 @@ def get_dashboard_data():
                         "current": minor_total,
                         "ref": minor_ref,
                         "percent_change": minor_percent_change,
+                    },
+                    "unknown": {
+                        "current": unknown_total,
+                        "ref": unknown_ref,
+                        "percent_change": unknown_percent_change,
                     },
                 },
             }

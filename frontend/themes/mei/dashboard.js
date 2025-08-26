@@ -289,6 +289,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('.value_up3').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
             }
 
+            document.getElementById('part11-unknown').textContent = data.part11.unknown.current || '-';
+            const unknownChange = document.getElementById('part11-unknown-change');
+            unknownChange.textContent = data.part11.unknown.percent_change ? `${data.part11.unknown.percent_change}%` : '-';
+            if (data.part11.unknown.percent_change > 0) {
+                $('.value_up4').show();
+                $('#part11-unknown-change').css('color', '#15AD63');
+                $('.value_up4').attr('src', './themes/default/images/icon_sanjiaoxing_top_green.png');
+            } else if (data.part11.unknown.percent_change < 0) {
+                $('.value_up4').show();
+                $('#part11-unknown-change').css('color', '#DC2D65');
+                $('.value_up4').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
+            } else {
+                unknownChange.textContent = '0%';
+                $('#part11-unknown-change').css('color', '#7e797bff');
+                $('.value_up4').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
+            }
+
             hideLoading('part11');
         }
 
@@ -733,7 +750,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // 初始化仪表板图表函数
-    function setCharts(data, type = 'weekly_current') {
+    function setCharts(data, type = 'monthly_current') {
         const canvas = document.getElementById("canvas_11");
         const ctx = canvas.getContext('2d');
 
@@ -916,49 +933,37 @@ document.addEventListener('DOMContentLoaded', function () {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                tooltips: {
+                    enabled: false // 禁用提示框
+                },
+                hover: {
+                    animationDuration: 0 // 禁用动画
+                },
                 legend: {
                     display: true,
-                    position: 'right', // 正确的图例位置配置
+                    position: 'right', // 图例位置配置
                     labels: {
                         boxWidth: 20,
                         padding: 15,
                         fontSize: 14
                     }
                 },
-                plugins: {
-                    legend: {
-                        display: true
-                    },
-                    tooltip: {
-                        callbacks: {
-                            title: function (context) {
-                                return context[0].label;
-                            },
-                            label: function (context) {
-                                const value = context.parsed.y;
-                                return `${context.dataset.label}: ${value.toLocaleString()}`;
-                            }
-                        }
-                    }
-                },
                 scales: {
-                    x: {
-                        stacked: true,
-                        grid: {
-                            display: false
-                        }
-                    },
-                    y: {
-                        stacked: true,
-                        beginAtZero: true,
+                    xAxes: [{
+                        stacked: false,
                         ticks: {
-                            callback: function (value) {
-                                return value > 1000 ?
-                                    (value / 1000).toFixed(1) + 'k' :
-                                    value.toLocaleString();
+                            callback: function (value, index, values) {
+                                // if (index === values.length - 1) return '';
+                                return value;
                             }
                         }
-                    }
+                    }],
+                    yAxes: [{
+                        stacked: false,
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }]
                 }
             }
         });
@@ -1057,4 +1062,57 @@ document.addEventListener('DOMContentLoaded', function () {
             html2pdf().set(opt).from(element).save();
         }
     }
+
+    // 创建图片弹出层
+    const modal = document.createElement('div');
+    modal.className = 'camera-modal';
+    modal.innerHTML = `
+        <div class="camera-modal-content">
+            <span class="close-modal">&times;</span>
+            <img src="./themes/default/images/picture_total.png" alt="Camera View">
+        </div>`;
+    document.body.appendChild(modal);
+
+    const cameraImageMap = {
+        A6: './themes/default/images/picture_A6.png',
+        A2: './themes/default/images/picture_A2.png',
+        A3: './themes/default/images/picture_A3.png',
+        A4: './themes/default/images/picture_A4.png',
+    };
+
+    // 添加点击事件监听器
+    document.querySelectorAll('.camera-title').forEach(title => {
+        title.addEventListener('click', function () {
+            const cameraId = this.getAttribute('data-camera-id');
+            const imagePath = cameraImageMap[cameraId] || './themes/default/images/picture_total.png';
+
+            const modal = document.querySelector('.camera-modal');
+            const modalImage = modal.querySelector('img');
+
+            modalImage.src = imagePath;
+            modal.style.display = 'flex';
+        });
+    });
+
+    // 关闭按钮功能
+    document.querySelector('.close-modal').addEventListener('click', function () {
+        const modal = document.querySelector('.camera-modal');
+        modal.style.display = 'none';
+    });
+
+    // 点击背景关闭
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) {
+            const modal = document.querySelector('.camera-modal');
+            modal.style.display = 'none';
+        }
+    });
+
+    // ESC键关闭
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal.style.display === 'flex') {
+            const modal = document.querySelector('.camera-modal');
+            modal.style.display = 'none';
+        }
+    });
 });
