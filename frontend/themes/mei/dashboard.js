@@ -334,7 +334,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function fillCameraStats(partId, stats) {
-        document.getElementById(`${partId}-total`).textContent = stats.total || '-';
+        document.getElementById(`${partId}-total-in`).textContent = stats.total_in || '-';
+        document.getElementById(`${partId}-total-out`).textContent = stats.total_out || '-';
         document.getElementById(`${partId}-male`).textContent = stats.male_percent ? `${stats.male_percent}%` : '-';
         document.getElementById(`${partId}-female`).textContent = stats.female_percent ? `${stats.female_percent}%` : '-';
         document.getElementById(`${partId}-children`).textContent = stats.minor_percent ? `${stats.minor_percent}%` : '-';
@@ -345,7 +346,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function fillAreaStats(partId, stats) {
-        document.getElementById(`${partId}-value`).textContent = stats.value || '0';
+        document.getElementById(`${partId}-value-in`).textContent = stats.value_in || '0';
+        document.getElementById(`${partId}-value-out`).textContent = stats.value_out || '0';
         document.getElementById(`${partId}-comparison`).textContent = stats.comparison || '-';
         const changeElement = document.getElementById(`${partId}-change`);
         changeElement.textContent = stats.percent_change ? `\u00A0\u00A0${stats.percent_change}%` : '-';
@@ -1003,16 +1005,24 @@ document.addEventListener('DOMContentLoaded', function () {
                         ctx.save(); // 保存当前绘图状态
 
                         // 1. 绘制柱状图上的数值标签
-                        ctx.font = Chart.helpers.fontString(12, 'bold', Chart.defaults.global.defaultFontFamily);
+                        ctx.font = Chart.helpers.fontString(14, 'bold', Chart.defaults.global.defaultFontFamily);
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
+
+                        // 遍历数据集
                         this.data.datasets.forEach(function (dataset, i) {
                             const meta = this.getDatasetMeta(i);
+
+                            // 检查数据集是否隐藏
+                            if (meta.hidden) {
+                                return; // 跳过隐藏的数据集
+                            }
+
                             meta.data.forEach(function (bar, index) {
                                 const data = dataset.data[index];
                                 if (data) {
-                                    ctx.fillStyle = '#605f5fff';
-                                    ctx.fillText(data, bar._model.x, bar._model.y - 5);
+                                    ctx.fillStyle = '#ffffffff';
+                                    ctx.fillText(data, bar._model.x, bar._model.y + 25);
                                 }
                             });
                         }, this);
@@ -1050,7 +1060,7 @@ document.addEventListener('DOMContentLoaded', function () {
     canvasContainer.style.position = "relative";
     canvasContainer.appendChild(loadingMessage);
 
-    // 页面加载时只请求一次 Weekly Footfall Distribution Overal 数据
+    // 页面加载时只请求一次 Weekly Footfall Distribution Overall 数据
     fetch('/api/footfall-distribution')
         .then(res => res.json())
         .then(data => {
@@ -1060,7 +1070,7 @@ document.addEventListener('DOMContentLoaded', function () {
             loadingMessage.remove();
         })
         .catch(error => {
-            console.error('Error loading Monthly Footfall Distribution Overal data:', error);
+            console.error('Error loading Monthly Footfall Distribution Overall data:', error);
             loadingMessage.textContent = "Failed to load data.";
             loadingMessage.style.color = "#DC2D65";
         });

@@ -67,7 +67,11 @@ def setup_database():
     CREATE INDEX idx_video_analysis_year_quarter ON video_analysis (EXTRACT(YEAR FROM start_time), EXTRACT(QUARTER FROM start_time));
     CREATE INDEX idx_video_analysis_year ON video_analysis (EXTRACT(YEAR FROM start_time));
     CREATE INDEX idx_video_analysis_week ON video_analysis (date_trunc('week', start_time));
-    CREATE INDEX idx_video_analysis_date_range ON video_analysis (start_time, end_time);
+    CREATE INDEX idx_video_analysis_date_range ON video_analysis USING btree (start_time, end_time);
+    CREATE INDEX idx_video_analysis_camera_time ON video_analysis (camera_name, start_time, end_time);
+    CREATE INDEX idx_video_analysis_weekly ON video_analysis (date_trunc('week', start_time));
+    CREATE INDEX idx_video_analysis_quarter ON video_analysis (date_trunc('quarter', start_time));
+    CREATE INDEX idx_video_analysis_camera_period ON video_analysis (camera_name, start_time, end_time);
 
     -- CREATE TABLE
     CREATE TABLE public.users( 

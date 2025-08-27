@@ -313,18 +313,25 @@ def get_dashboard_data():
         )
         reference_visitors_in = cur.fetchone()[0]
 
+        # 确保流量不为负数
+        if total_visitors_in < 0:
+            total_visitors_in = 0
+        # 确保ref流量不为负数
+        if reference_visitors_in < 0:
+            reference_visitors_in = 0
+
         total_percent_change = calc_percent_change(total_visitors_in, reference_visitors_in)
 
-        # Part 2: Peak and Low periods
+        # Part 2: Peak and Low periods(by in_count)
         cur.execute(
             """
             SELECT 
                 TO_CHAR(start_time, 'YYYY/MM/DD HH24:MI:SS') || '~' || 
                 TO_CHAR(end_time, 'HH24:MI:SS') AS period,
-                total_people || ' pax' AS count_str
+                in_count || ' pax' AS count_str
             FROM video_analysis
             WHERE start_time >= %s AND end_time <= %s
-            ORDER BY total_people DESC
+            ORDER BY in_count DESC
             LIMIT 1
         """,
             (date_start, date_end),
@@ -337,10 +344,10 @@ def get_dashboard_data():
             SELECT 
                 TO_CHAR(start_time, 'YYYY/MM/DD HH24:MI:SS') || '~' || 
                 TO_CHAR(end_time, 'HH24:MI:SS') AS period,
-                total_people || ' pax' AS count_str
+                in_count || ' pax' AS count_str
             FROM video_analysis
             WHERE start_time >= %s AND end_time <= %s
-            ORDER BY total_people ASC
+            ORDER BY in_count ASC
             LIMIT 1
         """,
             (date_start, date_end),
@@ -350,48 +357,77 @@ def get_dashboard_data():
 
         # Helper function to get camera stats
         def get_camera_stats(cam_name, date_start, date_end):
-            # 获取摄像头基本统计数据
-            cur.execute(
-                """
-                SELECT 
-                    COALESCE(SUM(total_people), 0) AS total,
-                    COALESCE(SUM(male_count), 0) AS male,
-                    COALESCE(SUM(female_count), 0) AS female,
-                    COALESCE(SUM(minor_count), 0) AS minor,
-                    COALESCE(SUM(unknown_gender_count), 0) AS unknown_gender
-                FROM video_analysis
-                WHERE camera_name = %s AND start_time >= %s AND end_time <= %s
-            """,
-                (cam_name, date_start, date_end),
-            )
-            row = cur.fetchone()
+            if cam_name is None:
+                # 获取整体基本统计数据
+                cur.execute(
+                    """
+                    SELECT 
+                        COALESCE(SUM(total_people), 0) AS total_people,
+                        COALESCE(SUM(in_count), 0) AS total_in,
+                        COALESCE(SUM(out_count), 0) AS total_out,
+                        COALESCE(SUM(male_count), 0) AS male,
+                        COALESCE(SUM(female_count), 0) AS female,
+                        COALESCE(SUM(minor_count), 0) AS minor,
+                        COALESCE(SUM(unknown_gender_count), 0) AS unknown_gender
+                    FROM video_analysis
+                    WHERE start_time >= %s AND end_time <= %s
+                """,
+                    (date_start, date_end),
+                )
+                row = cur.fetchone()
 
-            total = row[0]
+                total = row[0]
+                total_in = row[1]
+                total_out = row[2]
+
+            else:
+                # 获取摄像头基本统计数据
+                cur.execute(
+                    """
+                    SELECT 
+                        COALESCE(SUM(total_people), 0) AS total_people,
+                        COALESCE(SUM(in_count), 0) AS total_in,
+                        COALESCE(SUM(out_count), 0) AS total_out,
+                        COALESCE(SUM(male_count), 0) AS male,
+                        COALESCE(SUM(female_count), 0) AS female,
+                        COALESCE(SUM(minor_count), 0) AS minor,
+                        COALESCE(SUM(unknown_gender_count), 0) AS unknown_gender
+                    FROM video_analysis
+                    WHERE camera_name = %s AND start_time >= %s AND end_time <= %s
+                """,
+                    (cam_name, date_start, date_end),
+                )
+                row = cur.fetchone()
+
+                total = row[0]
+                total_in = row[1]
+                total_out = row[2]
+
             male_percent = (
-                "{:.1f}".format((row[1] / total) * 100, 1) if total > 0 else "0.0"
-            )
-            female_percent = (
-                "{:.1f}".format((row[2] / total) * 100, 1) if total > 0 else "0.0"
-            )
-            minor_percent = (
                 "{:.1f}".format((row[3] / total) * 100, 1) if total > 0 else "0.0"
             )
-            unknown_percent = (
+            female_percent = (
                 "{:.1f}".format((row[4] / total) * 100, 1) if total > 0 else "0.0"
             )
+            minor_percent = (
+                "{:.1f}".format((row[5] / total) * 100, 1) if total > 0 else "0.0"
+            )
+            unknown_percent = (
+                "{:.1f}".format((row[6] / total) * 100, 1) if total > 0 else "0.0"
+            )
 
-            # 获取Peak Period（最高人流时段）
+            # 获取Peak Period（最高in_count人流时段）
             cur.execute(
                 """
                 SELECT 
                     TO_CHAR(start_time, 'YYYY/MM/DD HH24:MI:SS') || '~' || 
                     TO_CHAR(end_time, 'HH24:MI:SS') AS period,
-                    total_people || ' pax' AS count_str
+                    in_count || ' pax' AS count_str
                 FROM video_analysis
                 WHERE camera_name = %s 
                     AND start_time >= %s 
                     AND end_time <= %s
-                ORDER BY total_people DESC
+                ORDER BY in_count DESC
                 LIMIT 1
             """,
                 (cam_name, date_start, date_end),
@@ -399,18 +435,18 @@ def get_dashboard_data():
             peak_row = cur.fetchone()
             peak_period = peak_row[0] + ", " + peak_row[1] if peak_row else "N/A"
 
-            # 获取Low Period（最低人流时段）
+            # 获取Low Period（最低in_count人流时段）
             cur.execute(
                 """
                 SELECT 
                     TO_CHAR(start_time, 'YYYY/MM/DD HH24:MI:SS') || '~' || 
                     TO_CHAR(end_time, 'HH24:MI:SS') AS period,
-                    total_people || ' pax' AS count_str
+                    in_count || ' pax' AS count_str
                 FROM video_analysis
                 WHERE camera_name = %s 
                     AND start_time >= %s 
                     AND end_time <= %s
-                ORDER BY total_people ASC
+                ORDER BY in_count ASC
                 LIMIT 1
             """,
                 (cam_name, date_start, date_end),
@@ -419,7 +455,8 @@ def get_dashboard_data():
             low_period = low_row[0] + ", " + low_row[1] if low_row else "N/A"
 
             return {
-                "total": total,
+                "total_in": total_in,
+                "total_out": total_out,
                 "male_percent": male_percent,
                 "female_percent": female_percent,
                 "minor_percent": minor_percent,
@@ -435,329 +472,533 @@ def get_dashboard_data():
         a4_stats = get_camera_stats("A4", date_start, date_end)
 
         # Helper function to get area net count
-        def get_net_count(cameras, date_start, date_end):
-            placeholders = ",".join(["%s"] * len(cameras))
-            query = f"""
-                SELECT 
-                    COALESCE(SUM(in_count), 0) - COALESCE(SUM(out_count), 0) AS net_count
-                FROM video_analysis
-                WHERE camera_name IN ({placeholders}) 
-                AND start_time >= %s AND end_time <= %s
-            """
-            params = cameras + [date_start, date_end]
-            cur.execute(query, params)
-            row = cur.fetchone()
-            return row[0] if row else 0
+        # def get_net_count(cameras, date_start, date_end):
+        #     placeholders = ",".join(["%s"] * len(cameras))
+        #     query = f"""
+        #         SELECT 
+        #             COALESCE(SUM(in_count), 0) - COALESCE(SUM(out_count), 0) AS net_count
+        #         FROM video_analysis
+        #         WHERE camera_name IN ({placeholders}) 
+        #         AND start_time >= %s AND end_time <= %s
+        #     """
+        #     params = cameras + [date_start, date_end]
+        #     cur.execute(query, params)
+        #     row = cur.fetchone()
+        #     return row[0] if row else 0
 
         # 计算指定摄像头组合的净流量性别分布
-        def get_gender_net_count(cameras, date_start, date_end):
-            result = {"male": 0, "female": 0, "unknown": 0}
-            for cam in cameras:
-                cur.execute(
-                    """
-                    SELECT 
-                        COALESCE(SUM(in_count), 0) AS in_sum,
-                        COALESCE(SUM(out_count), 0) AS out_sum,
-                        COALESCE(SUM(male_count), 0) AS male_sum,
-                        COALESCE(SUM(female_count), 0) AS female_sum,
-                        COALESCE(SUM(unknown_gender_count), 0) AS unknown_sum,
-                        COALESCE(SUM(total_people), 0) AS total_sum
-                    FROM video_analysis
-                    WHERE camera_name = %s AND start_time >= %s AND end_time <= %s
-                """,
-                    (cam, date_start, date_end),
-                )
-                in_sum, out_sum, male_sum, female_sum, unknown_sum, total_sum = (
-                    cur.fetchone()
-                )
-                net = in_sum - out_sum
-                if total_sum > 0 and net != 0:
-                    male_float = net * (male_sum / total_sum)
-                    female_float = net * (female_sum / total_sum)
-                    unknown_float = net * (unknown_sum / total_sum)
-                    # 向下取整
-                    male_int = int(male_float)
-                    female_int = int(female_float)
-                    unknown_int = int(unknown_float)
-                    # 剩余分配给最大小数部分
-                    allocated = male_int + female_int + unknown_int
-                    remainder = net - allocated
-                    floats = {
-                        "male": male_float - male_int,
-                        "female": female_float - female_int,
-                        "unknown": unknown_float - unknown_int,
-                    }
-                    for _ in range(abs(remainder)):
-                        # 找到最大小数部分的性别
-                        key = max(floats, key=floats.get)
-                        if remainder > 0:
-                            if key == "male":
-                                male_int += 1
-                            elif key == "female":
-                                female_int += 1
-                            else:
-                                unknown_int += 1
-                        elif remainder < 0:
-                            if key == "male" and male_int > 0:
-                                male_int -= 1
-                            elif key == "female" and female_int > 0:
-                                female_int -= 1
-                            elif key == "unknown" and unknown_int > 0:
-                                unknown_int -= 1
-                        floats[key] = 0  # 已分配，避免重复
-                    result["male"] += male_int
-                    result["female"] += female_int
-                    result["unknown"] += unknown_int
-                else:
-                    # 没有总人数或净流量为0时全部为0
-                    pass
-            return result
+        # def get_gender_net_count(cameras, date_start, date_end):
+        #     result = {"male": 0, "female": 0, "unknown": 0}
+        #     for cam in cameras:
+        #         cur.execute(
+        #             """
+        #             SELECT 
+        #                 COALESCE(SUM(in_count), 0) AS in_sum,
+        #                 COALESCE(SUM(out_count), 0) AS out_sum,
+        #                 COALESCE(SUM(male_count), 0) AS male_sum,
+        #                 COALESCE(SUM(female_count), 0) AS female_sum,
+        #                 COALESCE(SUM(unknown_gender_count), 0) AS unknown_sum,
+        #                 COALESCE(SUM(total_people), 0) AS total_sum
+        #             FROM video_analysis
+        #             WHERE camera_name = %s AND start_time >= %s AND end_time <= %s
+        #         """,
+        #             (cam, date_start, date_end),
+        #         )
+        #         in_sum, out_sum, male_sum, female_sum, unknown_sum, total_sum = (
+        #             cur.fetchone()
+        #         )
+        #         net = in_sum - out_sum
+        #         if total_sum > 0 and net != 0:
+        #             male_float = net * (male_sum / total_sum)
+        #             female_float = net * (female_sum / total_sum)
+        #             unknown_float = net * (unknown_sum / total_sum)
+        #             # 向下取整
+        #             male_int = int(male_float)
+        #             female_int = int(female_float)
+        #             unknown_int = int(unknown_float)
+        #             # 剩余分配给最大小数部分
+        #             allocated = male_int + female_int + unknown_int
+        #             remainder = net - allocated
+        #             floats = {
+        #                 "male": male_float - male_int,
+        #                 "female": female_float - female_int,
+        #                 "unknown": unknown_float - unknown_int,
+        #             }
+        #             for _ in range(abs(remainder)):
+        #                 # 找到最大小数部分的性别
+        #                 key = max(floats, key=floats.get)
+        #                 if remainder > 0:
+        #                     if key == "male":
+        #                         male_int += 1
+        #                     elif key == "female":
+        #                         female_int += 1
+        #                     else:
+        #                         unknown_int += 1
+        #                 elif remainder < 0:
+        #                     if key == "male" and male_int > 0:
+        #                         male_int -= 1
+        #                     elif key == "female" and female_int > 0:
+        #                         female_int -= 1
+        #                     elif key == "unknown" and unknown_int > 0:
+        #                         unknown_int -= 1
+        #                 floats[key] = 0  # 已分配，避免重复
+        #             result["male"] += male_int
+        #             result["female"] += female_int
+        #             result["unknown"] += unknown_int
+        #         else:
+        #             # 没有总人数或净流量为0时全部为0
+        #             pass
+        #     return result
 
         # 专用于 Part 7 的净流量计算
-        def get_cold_storage_net_count(date_start, date_end):
-            # A7进 - A7出 - A6进 + A6出
-            cur.execute(
-                """
-                SELECT 
-                    COALESCE(SUM(in_count), 0) AS a7_in,
-                    COALESCE(SUM(out_count), 0) AS a7_out
-                FROM video_analysis
-                WHERE camera_name = %s AND start_time >= %s AND end_time <= %s
-            """,
-                ("A7", date_start, date_end),
-            )
-            a7_in, a7_out = cur.fetchone()
-            cur.execute(
-                """
-                SELECT 
-                    COALESCE(SUM(in_count), 0) AS a6_in,
-                    COALESCE(SUM(out_count), 0) AS a6_out
-                FROM video_analysis
-                WHERE camera_name = %s AND start_time >= %s AND end_time <= %s
-            """,
-                ("A6", date_start, date_end),
-            )
-            a6_in, a6_out = cur.fetchone()
-            net = a7_in - a7_out - a6_in + a6_out
-            return net
+        # def get_cold_storage_net_count(date_start, date_end):
+        #     # A7进 - A7出 - A6进 + A6出
+        #     cur.execute(
+        #         """
+        #         SELECT 
+        #             COALESCE(SUM(in_count), 0) AS a7_in,
+        #             COALESCE(SUM(out_count), 0) AS a7_out
+        #         FROM video_analysis
+        #         WHERE camera_name = %s AND start_time >= %s AND end_time <= %s
+        #     """,
+        #         ("A7", date_start, date_end),
+        #     )
+        #     a7_in, a7_out = cur.fetchone()
+        #     cur.execute(
+        #         """
+        #         SELECT 
+        #             COALESCE(SUM(in_count), 0) AS a6_in,
+        #             COALESCE(SUM(out_count), 0) AS a6_out
+        #         FROM video_analysis
+        #         WHERE camera_name = %s AND start_time >= %s AND end_time <= %s
+        #     """,
+        #         ("A6", date_start, date_end),
+        #     )
+        #     a6_in, a6_out = cur.fetchone()
+        #     net = a7_in - a7_out - a6_in + a6_out
+        #     return net
 
         # 专用于 Part 7 的性别分布计算
-        def get_cold_storage_gender_count(date_start, date_end):
-            # 先分别查A7和A6的总人数及性别人数
-            cur.execute(
-                """
-                SELECT 
-                    COALESCE(SUM(in_count), 0) AS a7_in,
-                    COALESCE(SUM(out_count), 0) AS a7_out,
-                    COALESCE(SUM(male_count), 0) AS a7_male,
-                    COALESCE(SUM(female_count), 0) AS a7_female,
-                    COALESCE(SUM(unknown_gender_count), 0) AS a7_unknown,
-                    COALESCE(SUM(total_people), 0) AS a7_total
-                FROM video_analysis
-                WHERE camera_name = %s AND start_time >= %s AND end_time <= %s
-            """,
-                ("A7", date_start, date_end),
-            )
-            a7_in, a7_out, a7_male, a7_female, a7_unknown, a7_total = cur.fetchone()
-            cur.execute(
-                """
-                SELECT 
-                    COALESCE(SUM(in_count), 0) AS a6_in,
-                    COALESCE(SUM(out_count), 0) AS a6_out,
-                    COALESCE(SUM(male_count), 0) AS a6_male,
-                    COALESCE(SUM(female_count), 0) AS a6_female,
-                    COALESCE(SUM(unknown_gender_count), 0) AS a6_unknown,
-                    COALESCE(SUM(total_people), 0) AS a6_total
-                FROM video_analysis
-                WHERE camera_name = %s AND start_time >= %s AND end_time <= %s
-            """,
-                ("A6", date_start, date_end),
-            )
-            a6_in, a6_out, a6_male, a6_female, a6_unknown, a6_total = cur.fetchone()
+        # def get_cold_storage_gender_count(date_start, date_end):
+        #     # 先分别查A7和A6的总人数及性别人数
+        #     cur.execute(
+        #         """
+        #         SELECT 
+        #             COALESCE(SUM(in_count), 0) AS a7_in,
+        #             COALESCE(SUM(out_count), 0) AS a7_out,
+        #             COALESCE(SUM(male_count), 0) AS a7_male,
+        #             COALESCE(SUM(female_count), 0) AS a7_female,
+        #             COALESCE(SUM(unknown_gender_count), 0) AS a7_unknown,
+        #             COALESCE(SUM(total_people), 0) AS a7_total
+        #         FROM video_analysis
+        #         WHERE camera_name = %s AND start_time >= %s AND end_time <= %s
+        #     """,
+        #         ("A7", date_start, date_end),
+        #     )
+        #     a7_in, a7_out, a7_male, a7_female, a7_unknown, a7_total = cur.fetchone()
+        #     cur.execute(
+        #         """
+        #         SELECT 
+        #             COALESCE(SUM(in_count), 0) AS a6_in,
+        #             COALESCE(SUM(out_count), 0) AS a6_out,
+        #             COALESCE(SUM(male_count), 0) AS a6_male,
+        #             COALESCE(SUM(female_count), 0) AS a6_female,
+        #             COALESCE(SUM(unknown_gender_count), 0) AS a6_unknown,
+        #             COALESCE(SUM(total_people), 0) AS a6_total
+        #         FROM video_analysis
+        #         WHERE camera_name = %s AND start_time >= %s AND end_time <= %s
+        #     """,
+        #         ("A6", date_start, date_end),
+        #     )
+        #     a6_in, a6_out, a6_male, a6_female, a6_unknown, a6_total = cur.fetchone()
 
-            # 分别计算A7和A6的净流量
-            a7_net = a7_in - a7_out
-            a6_net = a6_in - a6_out
+        #     # 分别计算A7和A6的净流量
+        #     a7_net = a7_in - a7_out
+        #     a6_net = a6_in - a6_out
 
-            # A7部分
-            a7_male_float = a7_net * (a7_male / a7_total) if a7_total > 0 else "0.0"
-            a7_female_float = a7_net * (a7_female / a7_total) if a7_total > 0 else "0.0"
-            a7_unknown_float = (
-                a7_net * (a7_unknown / a7_total) if a7_total > 0 else "0.0"
-            )
+        #     # A7部分
+        #     a7_male_float = a7_net * (a7_male / a7_total) if a7_total > 0 else "0.0"
+        #     a7_female_float = a7_net * (a7_female / a7_total) if a7_total > 0 else "0.0"
+        #     a7_unknown_float = (
+        #         a7_net * (a7_unknown / a7_total) if a7_total > 0 else "0.0"
+        #     )
 
-            # A6部分（注意是负号）
-            a6_male_float = -a6_net * (a6_male / a6_total) if a6_total > 0 else "0.0"
-            a6_female_float = (
-                -a6_net * (a6_female / a6_total) if a6_total > 0 else "0.0"
-            )
-            a6_unknown_float = (
-                -a6_net * (a6_unknown / a6_total) if a6_total > 0 else "0.0"
-            )
+        #     # A6部分（注意是负号）
+        #     a6_male_float = -a6_net * (a6_male / a6_total) if a6_total > 0 else "0.0"
+        #     a6_female_float = (
+        #         -a6_net * (a6_female / a6_total) if a6_total > 0 else "0.0"
+        #     )
+        #     a6_unknown_float = (
+        #         -a6_net * (a6_unknown / a6_total) if a6_total > 0 else "0.0"
+        #     )
 
-            # 合并
-            male_float = a7_male_float + a6_male_float
-            female_float = a7_female_float + a6_female_float
-            unknown_float = a7_unknown_float + a6_unknown_float
+        #     # 合并
+        #     male_float = a7_male_float + a6_male_float
+        #     female_float = a7_female_float + a6_female_float
+        #     unknown_float = a7_unknown_float + a6_unknown_float
 
-            # 向下取整
+        #     # 向下取整
+        #     male_int = int(male_float)
+        #     female_int = int(female_float)
+        #     unknown_int = int(unknown_float)
+        #     allocated = male_int + female_int + unknown_int
+        #     net = a7_net - a6_net
+        #     remainder = net - allocated
+        #     floats = {
+        #         "male": male_float - male_int,
+        #         "female": female_float - female_int,
+        #         "unknown": unknown_float - unknown_int,
+        #     }
+        #     for _ in range(abs(remainder)):
+        #         key = max(floats, key=floats.get)
+        #         if remainder > 0:
+        #             if key == "male":
+        #                 male_int += 1
+        #             elif key == "female":
+        #                 female_int += 1
+        #             else:
+        #                 unknown_int += 1
+        #         elif remainder < 0:
+        #             if key == "male" and male_int > 0:
+        #                 male_int -= 1
+        #             elif key == "female" and female_int > 0:
+        #                 female_int -= 1
+        #             elif key == "unknown" and unknown_int > 0:
+        #                 unknown_int -= 1
+        #         floats[key] = 0
+        #     return {"male": male_int, "female": female_int, "unknown": unknown_int}
+
+        # Part 7: Cold Storage (A7 and A6, 专用方法)
+        # cold_storage = get_cold_storage_net_count(date_start, date_end)
+        # cold_storage_ref = get_cold_storage_net_count(ref_date_start, ref_date_end)
+
+
+        def get_gender_count(total_count, male_percent_str, female_percent_str, unknown_percent_str):
+            # 将字符串百分比转换为浮点数（注意字符串格式如"12.3"）
+            male_percent = float(male_percent_str) / 100.0
+            female_percent = float(female_percent_str) / 100.0
+            unknown_percent = float(unknown_percent_str) / 100.0
+            
+            # 计算浮点数人数
+            male_float = total_count * male_percent
+            female_float = total_count * female_percent
+            unknown_float = total_count * unknown_percent
+            
+            # 向下取整得到整数部分
             male_int = int(male_float)
             female_int = int(female_float)
             unknown_int = int(unknown_float)
+            
+            # 计算已分配人数和剩余人数
             allocated = male_int + female_int + unknown_int
-            net = a7_net - a6_net
-            remainder = net - allocated
+            remainder = total_count - allocated
+            
+            # 创建浮点数小数部分字典
             floats = {
                 "male": male_float - male_int,
                 "female": female_float - female_int,
-                "unknown": unknown_float - unknown_int,
+                "unknown": unknown_float - unknown_int
             }
-            for _ in range(abs(remainder)):
-                key = max(floats, key=floats.get)
-                if remainder > 0:
-                    if key == "male":
-                        male_int += 1
-                    elif key == "female":
-                        female_int += 1
-                    else:
-                        unknown_int += 1
-                elif remainder < 0:
-                    if key == "male" and male_int > 0:
-                        male_int -= 1
-                    elif key == "female" and female_int > 0:
-                        female_int -= 1
-                    elif key == "unknown" and unknown_int > 0:
-                        unknown_int -= 1
-                floats[key] = 0
-            return {"male": male_int, "female": female_int, "unknown": unknown_int}
+            
+            # 分配剩余人数（按照小数部分大小降序分配）
+            for _ in range(remainder):
+                # 找到最大小数部分
+                max_key = max(floats, key=floats.get)
+                # 给该性别增加1
+                if max_key == "male":
+                    male_int += 1
+                elif max_key == "female":
+                    female_int += 1
+                else:
+                    unknown_int += 1
+                # 已分配，将该值置为0
+                floats[max_key] = 0
+            
+            # 返回最终结果
+            return {
+                "male": male_int,
+                "female": female_int,
+                "unknown": unknown_int
+            }
 
         # Part 7: Cold Storage (A7 and A6, 专用方法)
-        cold_storage = get_cold_storage_net_count(date_start, date_end)
-        cold_storage_ref = get_cold_storage_net_count(ref_date_start, ref_date_end)
-        # 确保cold_storage净流量不为负数
-        if cold_storage < 0:
-            cold_storage = 0
-        # 确保cold_storage_ref净流量不为负数
-        if cold_storage_ref < 0:
-            cold_storage_ref = 0
+        cold_storage_a7_stats = get_camera_stats("A7", date_start, date_end)
+        cold_storage_a6_stats = get_camera_stats("A6", date_start, date_end)
+        cold_storage_in = cold_storage_a7_stats["total_in"] + cold_storage_a6_stats["total_out"]
+        cold_storage_out = cold_storage_a7_stats["total_out"] + cold_storage_a6_stats["total_in"]
+        
+        cold_storage_a7_ref_stats = get_camera_stats("A7", ref_date_start, ref_date_end)
+        cold_storage_a6_ref_stats = get_camera_stats("A6", ref_date_start, ref_date_end)
+        cold_storage_ref_in = cold_storage_a7_ref_stats["total_in"] + cold_storage_a6_ref_stats["total_out"]
 
-        cold_storage_percent = calc_percent_change(cold_storage, cold_storage_ref)
+        # 确保流量不为负数
+        if cold_storage_in < 0:
+            cold_storage_in = 0
+        # 确保ref流量不为负数
+        if cold_storage_ref_in < 0:
+            cold_storage_ref_in = 0
 
-        if cold_storage == 0:
+        cold_storage_percent = calc_percent_change(cold_storage_in, cold_storage_ref_in)
+
+        if cold_storage_in == 0:
             cold_storage_gender = {"male": 0, "female": 0, "unknown": 0}
         else:
-            cold_storage_gender = get_cold_storage_gender_count(date_start, date_end)
+            cold_storage_a7_gender = get_gender_count(cold_storage_a7_stats["total_in"], cold_storage_a7_stats["male_percent"], cold_storage_a7_stats["female_percent"], cold_storage_a7_stats["unknown_percent"])
+            cold_storage_a6_gender = get_gender_count(cold_storage_a6_stats["total_out"], cold_storage_a6_stats["male_percent"], cold_storage_a6_stats["female_percent"], cold_storage_a6_stats["unknown_percent"])
+
+            cold_storage_gender = {
+                "male": cold_storage_a7_gender["male"] + cold_storage_a6_gender["male"],
+                "female": cold_storage_a7_gender["female"] + cold_storage_a6_gender["female"],
+                "unknown": cold_storage_a7_gender["unknown"] + cold_storage_a6_gender["unknown"]
+            }
 
         # Part 8: A8
-        a8_value = get_net_count(["A8"], date_start, date_end)
-        a8_ref = get_net_count(["A8"], ref_date_start, ref_date_end)
+        # a8_value = get_net_count(["A8"], date_start, date_end)
+        # a8_ref = get_net_count(["A8"], ref_date_start, ref_date_end)
 
-        # 确保a8_value净流量不为负数
-        if a8_value < 0:
-            a8_value = 0
-        # 确保a8_ref净流量不为负数
-        if a8_ref < 0:
-            a8_ref = 0
+        # # 确保a8_value净流量不为负数
+        # if a8_value < 0:
+        #     a8_value = 0
+        # # 确保a8_ref净流量不为负数
+        # if a8_ref < 0:
+        #     a8_ref = 0
 
-        a8_percent = calc_percent_change(a8_value, a8_ref)
+        # a8_percent = calc_percent_change(a8_value, a8_ref)
 
-        if a8_value == 0:
+        # if a8_value == 0:
+        #     a8_gender = {"male": 0, "female": 0, "unknown": 0}
+        # else:
+        #     a8_gender = get_gender_net_count(["A8"], date_start, date_end)
+
+        # part 8:A8
+        a8_stats = get_camera_stats("A8", date_start, date_end)
+        a8_value_in = a8_stats["total_in"]
+        a8_value_out = a8_stats["total_out"]
+        
+        a8_ref_stats = get_camera_stats("A8", ref_date_start, ref_date_end)
+        a8_ref_in = a8_ref_stats["total_in"]
+
+        # 确保流量不为负数
+        if a8_value_in < 0:
+            a8_value_in = 0
+        # 确保ref流量不为负数
+        if a8_ref_in < 0:
+            a8_ref_in = 0
+
+        a8_percent = calc_percent_change(a8_value_in, a8_ref_in)
+
+        if a8_value_in == 0:
             a8_gender = {"male": 0, "female": 0, "unknown": 0}
         else:
-            a8_gender = get_gender_net_count(["A8"], date_start, date_end)
+            a8_male_percent = a8_stats["male_percent"]
+            a8_female_percent = a8_stats["female_percent"]
+            a8_unknown_percent = a8_stats["unknown_percent"]
+            a8_gender = get_gender_count(a8_value_in, a8_male_percent, a8_female_percent, a8_unknown_percent)
+
+        # # Part 10: 2nd Floor (A2, A3, A1, A6)
+        # second_floor_value = get_net_count(
+        #     ["A2", "A3", "A1", "A6"], date_start, date_end
+        # )
+        # second_floor_ref = get_net_count(
+        #     ["A2", "A3", "A1", "A6"], ref_date_start, ref_date_end
+        # )
+
+        # # 确保second_floor_value净流量不为负数
+        # if second_floor_value < 0:
+        #     second_floor_value = 0
+        # # 确保second_floor_ref净流量不为负数
+        # if second_floor_ref < 0:
+        #     second_floor_ref = 0
+
+        # second_floor_percent = calc_percent_change(second_floor_value, second_floor_ref)
+
+        # if second_floor_value == 0:
+        #     second_floor_gender = {"male": 0, "female": 0, "unknown": 0}
+        # else:
+        #     second_floor_gender = get_gender_net_count(
+        #         ["A2", "A3", "A1", "A6"], date_start, date_end
+        #     )
 
         # Part 10: 2nd Floor (A2, A3, A1, A6)
-        second_floor_value = get_net_count(
-            ["A2", "A3", "A1", "A6"], date_start, date_end
-        )
-        second_floor_ref = get_net_count(
-            ["A2", "A3", "A1", "A6"], ref_date_start, ref_date_end
-        )
+        a1_stats = get_camera_stats("A1", date_start, date_end)
+        second_floor_in = a1_stats["total_in"] + a2_stats["total_in"] + a3_stats["total_in"] + a6_stats["total_in"]
+        second_floor_out = a1_stats["total_out"] + a2_stats["total_out"] + a3_stats["total_out"] + a6_stats["total_out"]
+        
+        a1_ref_stats = get_camera_stats("A1", ref_date_start, ref_date_end)
+        a2_ref_stats = get_camera_stats("A2", ref_date_start, ref_date_end)
+        a3_ref_stats = get_camera_stats("A3", ref_date_start, ref_date_end)
+        a6_ref_stats = get_camera_stats("A6", ref_date_start, ref_date_end)
 
-        # 确保second_floor_value净流量不为负数
-        if second_floor_value < 0:
-            second_floor_value = 0
-        # 确保second_floor_ref净流量不为负数
-        if second_floor_ref < 0:
-            second_floor_ref = 0
+        second_floor_ref_in = a1_ref_stats["total_in"] + a2_ref_stats["total_in"] + a3_ref_stats["total_in"] + a6_ref_stats["total_in"]
 
-        second_floor_percent = calc_percent_change(second_floor_value, second_floor_ref)
+        # 确保流量不为负数
+        if second_floor_in < 0:
+            second_floor_in = 0
+        # 确保ref流量不为负数
+        if second_floor_ref_in < 0:
+            second_floor_ref_in = 0
 
-        if second_floor_value == 0:
+        second_floor_percent = calc_percent_change(second_floor_in, second_floor_ref_in)
+
+        if second_floor_in == 0:
             second_floor_gender = {"male": 0, "female": 0, "unknown": 0}
         else:
-            second_floor_gender = get_gender_net_count(
-                ["A2", "A3", "A1", "A6"], date_start, date_end
-            )
+            a1_gender = get_gender_count(a1_stats["total_in"], a1_stats["male_percent"], a1_stats["female_percent"], a1_stats["unknown_percent"])
+            a2_gender = get_gender_count(a2_stats["total_in"], a2_stats["male_percent"], a2_stats["female_percent"], a2_stats["unknown_percent"])
+            a3_gender = get_gender_count(a3_stats["total_in"], a3_stats["male_percent"], a3_stats["female_percent"], a3_stats["unknown_percent"])
+            a6_gender = get_gender_count(a6_stats["total_in"], a6_stats["male_percent"], a6_stats["female_percent"], a6_stats["unknown_percent"])
 
-        # Part 9: Canteen (A4 and A5)
-        canteen_value = get_net_count(["A4", "A5"], date_start, date_end)
-        canteen_ref = get_net_count(["A4", "A5"], ref_date_start, ref_date_end)
+            second_floor_gender = {
+                "male": a1_gender["male"] + a2_gender["male"] + a3_gender["male"] + a6_gender["male"],
+                "female": a1_gender["female"] + a2_gender["female"] + a3_gender["female"] + a6_gender["female"],
+                "unknown": a1_gender["unknown"] + a2_gender["unknown"] + a3_gender["unknown"] + a6_gender["unknown"]
+            }
 
-        # 确保canteen_value净流量不为负数
-        if canteen_value < 0:
-            canteen_value = 0
-        # 确保canteen_ref净流量不为负数
-        if canteen_ref < 0:
-            canteen_ref = 0
+        # # Part 9: Canteen (A4 and A5)
+        # canteen_value = get_net_count(["A4", "A5"], date_start, date_end)
+        # canteen_ref = get_net_count(["A4", "A5"], ref_date_start, ref_date_end)
 
-        # 确保canteen区域人数不超过2nd Floor区域人数，防止数据错误
-        if canteen_value > second_floor_value:
-            canteen_value = second_floor_value
+        # # 确保canteen_value净流量不为负数
+        # if canteen_value < 0:
+        #     canteen_value = 0
+        # # 确保canteen_ref净流量不为负数
+        # if canteen_ref < 0:
+        #     canteen_ref = 0
+
+        # # 确保canteen区域人数不超过2nd Floor区域人数，防止数据错误
+        # if canteen_value > second_floor_value:
+        #     canteen_value = second_floor_value
         
-        if canteen_ref > second_floor_ref:
-            canteen_ref = second_floor_ref
+        # if canteen_ref > second_floor_ref:
+        #     canteen_ref = second_floor_ref
 
-        canteen_percent = calc_percent_change(canteen_value, canteen_ref)
+        # canteen_percent = calc_percent_change(canteen_value, canteen_ref)
 
-        if canteen_value == 0:
+        # if canteen_value == 0:
+        #     canteen_gender = {"male": 0, "female": 0, "unknown": 0}
+        # else:
+        #     canteen_gender = get_gender_net_count(["A4", "A5"], date_start, date_end)
+        
+        # Part 9: Canteen (A4 and A5)
+        a5_stats = get_camera_stats("A5", date_start, date_end)
+        canteen_value_in = a4_stats["total_in"] + a5_stats["total_in"]
+        canteen_value_out = a4_stats["total_out"] + a5_stats["total_out"]
+        
+        a4_ref_stats = get_camera_stats("A4", ref_date_start, ref_date_end)
+        a5_ref_stats = get_camera_stats("A5", ref_date_start, ref_date_end)
+
+        canteen_value_ref_in = a4_ref_stats["total_in"] + a5_ref_stats["total_in"]
+
+        # 确保流量不为负数
+        if canteen_value_in < 0:
+            canteen_value_in = 0
+        # 确保ref流量不为负数
+        if canteen_value_ref_in < 0:
+            canteen_value_ref_in = 0
+        # 确保canteen区域人数不超过2nd Floor区域人数，防止数据错误
+        if canteen_value_in > second_floor_in:
+            canteen_value_in = second_floor_in
+        
+        if canteen_value_ref_in > second_floor_ref_in:
+            canteen_value_ref_in = second_floor_ref_in
+
+        canteen_percent = calc_percent_change(canteen_value_in, canteen_value_ref_in)
+
+        if canteen_value_in == 0:
             canteen_gender = {"male": 0, "female": 0, "unknown": 0}
         else:
-            canteen_gender = get_gender_net_count(["A4", "A5"], date_start, date_end)
-        
-        # Part 11: Gender breakdown
-        cur.execute(
-            """
-            SELECT 
-                COALESCE(SUM(male_count), 0),
-                COALESCE(SUM(female_count), 0),
-                COALESCE(SUM(minor_count), 0),
-                COALESCE(SUM(unknown_gender_count), 0)
-            FROM video_analysis
-            WHERE start_time >= %s AND end_time <= %s
-        """,
-            (date_start, date_end),
-        )
-        gender_row = cur.fetchone()
-        male_total = gender_row[0]
-        female_total = gender_row[1]
-        minor_total = gender_row[2]
-        unknown_total = gender_row[3]
+            a4_gender = get_gender_count(a4_stats["total_in"], a4_stats["male_percent"], a4_stats["female_percent"], a4_stats["unknown_percent"])
+            a5_gender = get_gender_count(a5_stats["total_in"], a5_stats["male_percent"], a5_stats["female_percent"], a5_stats["unknown_percent"])
+            
+            canteen_gender = {
+                "male": a4_gender["male"] + a5_gender["male"],
+                "female": a4_gender["female"] + a5_gender["female"],
+                "unknown": a4_gender["unknown"] + a5_gender["unknown"]
+            }
 
-        # 参考时间段的性别统计
-        cur.execute(
-            """
-            SELECT 
-                COALESCE(SUM(male_count), 0),
-                COALESCE(SUM(female_count), 0),
-                COALESCE(SUM(minor_count), 0),
-                COALESCE(SUM(unknown_gender_count), 0)
-            FROM video_analysis
-            WHERE start_time >= %s AND end_time <= %s
-        """,
-            (ref_date_start, ref_date_end),
-        )
-        ref_gender_row = cur.fetchone()
-        male_ref = ref_gender_row[0]
-        female_ref = ref_gender_row[1]
-        minor_ref = ref_gender_row[2]
-        unknown_ref = ref_gender_row[3]
+        # # Part 11: Gender breakdown
+        # cur.execute(
+        #     """
+        #     SELECT 
+        #         COALESCE(SUM(male_count), 0),
+        #         COALESCE(SUM(female_count), 0),
+        #         COALESCE(SUM(minor_count), 0),
+        #         COALESCE(SUM(unknown_gender_count), 0)
+        #     FROM video_analysis
+        #     WHERE start_time >= %s AND end_time <= %s
+        # """,
+        #     (date_start, date_end),
+        # )
+        # gender_row = cur.fetchone()
+        # male_total = gender_row[0]
+        # female_total = gender_row[1]
+        # minor_total = gender_row[2]
+        # unknown_total = gender_row[3]
+
+        # # 参考时间段的性别统计
+        # cur.execute(
+        #     """
+        #     SELECT 
+        #         COALESCE(SUM(male_count), 0),
+        #         COALESCE(SUM(female_count), 0),
+        #         COALESCE(SUM(minor_count), 0),
+        #         COALESCE(SUM(unknown_gender_count), 0)
+        #     FROM video_analysis
+        #     WHERE start_time >= %s AND end_time <= %s
+        # """,
+        #     (ref_date_start, ref_date_end),
+        # )
+        # ref_gender_row = cur.fetchone()
+        # male_ref = ref_gender_row[0]
+        # female_ref = ref_gender_row[1]
+        # minor_ref = ref_gender_row[2]
+        # unknown_ref = ref_gender_row[3]
+
+        # Part 11: Gender breakdown
+        total_stats = get_camera_stats(None, date_start, date_end)
+        total_value_in = total_stats["total_in"]
+
+        total_ref_stats = get_camera_stats(None, ref_date_start, ref_date_end)
+        total_ref_value_in = total_ref_stats["total_in"]
+
+        # 确保流量不为负数
+        if total_value_in < 0:
+            total_value_in = 0
+        # 确保ref流量不为负数
+        if total_ref_value_in < 0:
+            total_ref_value_in = 0
+
+        if total_value_in == 0:
+            total_gender = {"male": 0, "female": 0, "unknown": 0}
+            total_minor_in = 0
+        else:
+            total_male_percent = total_stats["male_percent"]
+            total_female_percent = total_stats["female_percent"]
+            total_unknown_percent = total_stats["unknown_percent"]
+            total_minor_percent = total_stats["minor_percent"]
+            total_gender = get_gender_count(total_value_in, total_male_percent, total_female_percent, total_unknown_percent)
+            # 计算儿童流量
+            total_minor_in = int(float(total_minor_percent) / 100.0 * total_value_in)
+
+        if total_ref_value_in == 0:
+            total_ref_gender = {"male": 0, "female": 0, "unknown": 0}
+            total_ref_minor_in = 0
+        else:
+            total_ref_male_percent = total_ref_stats["male_percent"]
+            total_ref_female_percent = total_ref_stats["female_percent"]
+            total_ref_unknown_percent = total_ref_stats["unknown_percent"]
+            total_ref_minor_percent = total_ref_stats["minor_percent"]
+            total_ref_gender = get_gender_count(total_ref_value_in, total_ref_male_percent, total_ref_female_percent, total_ref_unknown_percent)
+            # 计算儿童流量
+            total_ref_minor_in = int(float(total_ref_minor_percent) / 100.0 * total_ref_value_in)
 
         # 计算百分比变化
-        male_percent_change = calc_percent_change(male_total, male_ref)
-        female_percent_change = calc_percent_change(female_total, female_ref)
-        minor_percent_change = calc_percent_change(minor_total, minor_ref)
-        unknown_percent_change = calc_percent_change(unknown_total, unknown_ref)
+        male_percent_change = calc_percent_change(total_gender["male"], total_ref_gender["male"])
+        female_percent_change = calc_percent_change(total_gender["female"], total_ref_gender["female"])
+        unknown_percent_change = calc_percent_change(total_gender["unknown"], total_ref_gender["unknown"])
+        
+        # 单独计算儿童百分比变化
+        minor_percent_change = calc_percent_change(total_minor_in, total_ref_minor_in)
 
         # 返回结果
         return jsonify(
@@ -774,32 +1015,36 @@ def get_dashboard_data():
                 "part5": a3_stats,
                 "part6": a4_stats,
                 "part7": {
-                    "value": cold_storage,
-                    "comparison": cold_storage_ref,
+                    "value_in": cold_storage_in,
+                    "value_out": cold_storage_out,
+                    "comparison": cold_storage_ref_in,
                     "percent_change": cold_storage_percent,
                     "male": cold_storage_gender["male"],
                     "female": cold_storage_gender["female"],
                     "unknown": cold_storage_gender["unknown"],
                 },
                 "part8": {
-                    "value": a8_value,
-                    "comparison": a8_ref,
+                    "value_in": a8_value_in,
+                    "value_out": a8_value_out,
+                    "comparison": a8_ref_in,
                     "percent_change": a8_percent,
                     "male": a8_gender["male"],
                     "female": a8_gender["female"],
                     "unknown": a8_gender["unknown"],
                 },
                 "part9": {
-                    "value": canteen_value,
-                    "comparison": canteen_ref,
+                    "value_in": canteen_value_in,
+                    "value_out": canteen_value_out,
+                    "comparison": canteen_value_ref_in,
                     "percent_change": canteen_percent,
                     "male": canteen_gender["male"],
                     "female": canteen_gender["female"],
                     "unknown": canteen_gender["unknown"],
                 },
                 "part10": {
-                    "value": second_floor_value,
-                    "comparison": second_floor_ref,
+                    "value_in": second_floor_in,
+                    "value_out": second_floor_out,
+                    "comparison": second_floor_ref_in,
                     "percent_change": second_floor_percent,
                     "male": second_floor_gender["male"],
                     "female": second_floor_gender["female"],
@@ -807,23 +1052,23 @@ def get_dashboard_data():
                 },
                 "part11": {
                     "male": {
-                        "current": male_total,
-                        "ref": male_ref,
+                        "current": total_gender["male"],
+                        "ref": total_ref_gender["male"],
                         "percent_change": male_percent_change,
                     },
                     "female": {
-                        "current": female_total,
-                        "ref": female_ref,
+                        "current": total_gender["female"],
+                        "ref": total_ref_gender["female"],
                         "percent_change": female_percent_change,
                     },
                     "children": {
-                        "current": minor_total,
-                        "ref": minor_ref,
+                        "current": total_minor_in,
+                        "ref": total_ref_minor_in,
                         "percent_change": minor_percent_change,
                     },
                     "unknown": {
-                        "current": unknown_total,
-                        "ref": unknown_ref,
+                        "current": total_gender["unknown"],
+                        "ref": total_ref_gender["unknown"],
                         "percent_change": unknown_percent_change,
                     },
                 },
@@ -852,7 +1097,9 @@ def get_footfall_distribution():
         for d in weekly_current_days:
             cur.execute(
                 """
-                SELECT 
+                SELECT
+                    COALESCE(SUM(total_people),0),
+                    COALESCE(SUM(in_count), 0),
                     COALESCE(SUM(male_count),0),
                     COALESCE(SUM(female_count),0),
                     COALESCE(SUM(minor_count),0),
@@ -863,10 +1110,24 @@ def get_footfall_distribution():
                 (d,),
             )
             row = cur.fetchone()
-            weekly_current["male"].append(row[0])
-            weekly_current["female"].append(row[1])
-            weekly_current["children"].append(row[2])
-            weekly_current["unknown"].append(row[3])
+
+            total_people = row[0]
+            total_in = row[1]
+            if total_people > 0:
+                male_percent = float(row[2] / total_people)
+                female_percent = float(row[3] / total_people)
+                children_percent = float(row[4] / total_people)
+                unknown_percent = float(row[5] / total_people)
+            else:
+                male_percent = 0
+                female_percent = 0
+                children_percent = 0
+                unknown_percent = 0
+
+            weekly_current["male"].append(int(total_in * male_percent))
+            weekly_current["female"].append(int(total_in * female_percent))
+            weekly_current["children"].append(int(total_in * children_percent))
+            weekly_current["unknown"].append(int(total_in * unknown_percent))
 
         # 2. weekly_historical: 上一周（不含本周），周一到周日
         last_week_start = today - timedelta(days=today.weekday() + 7)
@@ -876,6 +1137,8 @@ def get_footfall_distribution():
             cur.execute(
                 """
                 SELECT 
+                    COALESCE(SUM(total_people),0),
+                    COALESCE(SUM(in_count), 0),
                     COALESCE(SUM(male_count),0),
                     COALESCE(SUM(female_count),0),
                     COALESCE(SUM(minor_count),0),
@@ -886,10 +1149,24 @@ def get_footfall_distribution():
                 (d,),
             )
             row = cur.fetchone()
-            weekly_historical["male"].append(row[0])
-            weekly_historical["female"].append(row[1])
-            weekly_historical["children"].append(row[2])
-            weekly_historical["unknown"].append(row[3])
+
+            total_people = row[0]
+            total_in = row[1]
+            if total_people > 0:
+                male_percent = float(row[2] / total_people)
+                female_percent = float(row[3] / total_people)
+                children_percent = float(row[4] / total_people)
+                unknown_percent = float(row[5] / total_people)
+            else:
+                male_percent = 0
+                female_percent = 0
+                children_percent = 0
+                unknown_percent = 0
+
+            weekly_historical["male"].append(int(total_in * male_percent))
+            weekly_historical["female"].append(int(total_in * female_percent))
+            weekly_historical["children"].append(int(total_in * children_percent))
+            weekly_historical["unknown"].append(int(total_in * unknown_percent))
 
         # 3. monthly_current: 包含本周在内的前4周
         monthly_current = {"male": [], "female": [], "children": [], "unknown": []}
@@ -900,6 +1177,8 @@ def get_footfall_distribution():
             cur.execute(
                 """
                 SELECT 
+                    COALESCE(SUM(total_people),0),
+                    COALESCE(SUM(in_count), 0),
                     COALESCE(SUM(male_count),0),
                     COALESCE(SUM(female_count),0),
                     COALESCE(SUM(minor_count),0),
@@ -910,10 +1189,24 @@ def get_footfall_distribution():
                 (week_start, week_end),
             )
             row = cur.fetchone()
-            monthly_current["male"].append(row[0])
-            monthly_current["female"].append(row[1])
-            monthly_current["children"].append(row[2])
-            monthly_current["unknown"].append(row[3])
+
+            total_people = row[0]
+            total_in = row[1]
+            if total_people > 0:
+                male_percent = float(row[2] / total_people)
+                female_percent = float(row[3] / total_people)
+                children_percent = float(row[4] / total_people)
+                unknown_percent = float(row[5] / total_people)
+            else:
+                male_percent = 0
+                female_percent = 0
+                children_percent = 0
+                unknown_percent = 0
+
+            monthly_current["male"].append(int(total_in * male_percent))
+            monthly_current["female"].append(int(total_in * female_percent))
+            monthly_current["children"].append(int(total_in * children_percent))
+            monthly_current["unknown"].append(int(total_in * unknown_percent))
 
         # 4. monthly_historical: 不含本周的前4周
         monthly_historical = {"male": [], "female": [], "children": [], "unknown": []}
@@ -924,6 +1217,8 @@ def get_footfall_distribution():
             cur.execute(
                 """
                 SELECT 
+                    COALESCE(SUM(total_people),0),
+                    COALESCE(SUM(in_count), 0),
                     COALESCE(SUM(male_count),0),
                     COALESCE(SUM(female_count),0),
                     COALESCE(SUM(minor_count),0),
@@ -934,10 +1229,24 @@ def get_footfall_distribution():
                 (week_start, week_end),
             )
             row = cur.fetchone()
-            monthly_historical["male"].append(row[0])
-            monthly_historical["female"].append(row[1])
-            monthly_historical["children"].append(row[2])
-            monthly_historical["unknown"].append(row[3])
+
+            total_people = row[0]
+            total_in = row[1]
+            if total_people > 0:
+                male_percent = float(row[2] / total_people)
+                female_percent = float(row[3] / total_people)
+                children_percent = float(row[4] / total_people)
+                unknown_percent = float(row[5] / total_people)
+            else:
+                male_percent = 0
+                female_percent = 0
+                children_percent = 0
+                unknown_percent = 0
+
+            monthly_historical["male"].append(int(total_in * male_percent))
+            monthly_historical["female"].append(int(total_in * female_percent))
+            monthly_historical["children"].append(int(total_in * children_percent))
+            monthly_historical["unknown"].append(int(total_in * unknown_percent))
 
         # 5. quarterly_current: 包含本月在内的前3个月
         quarterly_current = {"male": [], "female": [], "children": [], "unknown": []}
@@ -949,6 +1258,8 @@ def get_footfall_distribution():
             cur.execute(
                 """
                 SELECT 
+                    COALESCE(SUM(total_people),0),
+                    COALESCE(SUM(in_count), 0),
                     COALESCE(SUM(male_count),0),
                     COALESCE(SUM(female_count),0),
                     COALESCE(SUM(minor_count),0),
@@ -959,10 +1270,24 @@ def get_footfall_distribution():
                 (year, mon),
             )
             row = cur.fetchone()
-            quarterly_current["male"].append(row[0])
-            quarterly_current["female"].append(row[1])
-            quarterly_current["children"].append(row[2])
-            quarterly_current["unknown"].append(row[3])
+
+            total_people = row[0]
+            total_in = row[1]
+            if total_people > 0:
+                male_percent = float(row[2] / total_people)
+                female_percent = float(row[3] / total_people)
+                children_percent = float(row[4] / total_people)
+                unknown_percent = float(row[5] / total_people)
+            else:
+                male_percent = 0
+                female_percent = 0
+                children_percent = 0
+                unknown_percent = 0
+
+            quarterly_current["male"].append(int(total_in * male_percent))
+            quarterly_current["female"].append(int(total_in * female_percent))
+            quarterly_current["children"].append(int(total_in * children_percent))
+            quarterly_current["unknown"].append(int(total_in * unknown_percent))
 
         # 6. quarterly_historical: 不含本月的前3个月
         quarterly_historical = {"male": [], "female": [], "children": [], "unknown": []}
@@ -974,6 +1299,8 @@ def get_footfall_distribution():
             cur.execute(
                 """
                 SELECT 
+                    COALESCE(SUM(total_people),0),
+                    COALESCE(SUM(in_count), 0),
                     COALESCE(SUM(male_count),0),
                     COALESCE(SUM(female_count),0),
                     COALESCE(SUM(minor_count),0),
@@ -984,10 +1311,24 @@ def get_footfall_distribution():
                 (year, mon),
             )
             row = cur.fetchone()
-            quarterly_historical["male"].append(row[0])
-            quarterly_historical["female"].append(row[1])
-            quarterly_historical["children"].append(row[2])
-            quarterly_historical["unknown"].append(row[3])
+
+            total_people = row[0]
+            total_in = row[1]
+            if total_people > 0:
+                male_percent = float(row[2] / total_people)
+                female_percent = float(row[3] / total_people)
+                children_percent = float(row[4] / total_people)
+                unknown_percent = float(row[5] / total_people)
+            else:
+                male_percent = 0
+                female_percent = 0
+                children_percent = 0
+                unknown_percent = 0
+
+            quarterly_historical["male"].append(int(total_in * male_percent))
+            quarterly_historical["female"].append(int(total_in * female_percent))
+            quarterly_historical["children"].append(int(total_in * children_percent))
+            quarterly_historical["unknown"].append(int(total_in * unknown_percent))
 
         # 7. yearly_current: 包含本季度在内的前4季度
         yearly_current = {"male": [], "female": [], "children": [], "unknown": []}
@@ -998,6 +1339,8 @@ def get_footfall_distribution():
             cur.execute(
                 """
                 SELECT 
+                    COALESCE(SUM(total_people),0),
+                    COALESCE(SUM(in_count), 0),
                     COALESCE(SUM(male_count),0),
                     COALESCE(SUM(female_count),0),
                     COALESCE(SUM(minor_count),0),
@@ -1008,10 +1351,24 @@ def get_footfall_distribution():
                 (q_year, q_num),
             )
             row = cur.fetchone()
-            yearly_current["male"].append(row[0])
-            yearly_current["female"].append(row[1])
-            yearly_current["children"].append(row[2])
-            yearly_current["unknown"].append(row[3])
+
+            total_people = row[0]
+            total_in = row[1]
+            if total_people > 0:
+                male_percent = float(row[2] / total_people)
+                female_percent = float(row[3] / total_people)
+                children_percent = float(row[4] / total_people)
+                unknown_percent = float(row[5] / total_people)
+            else:
+                male_percent = 0
+                female_percent = 0
+                children_percent = 0
+                unknown_percent = 0
+
+            yearly_current["male"].append(int(total_in * male_percent))
+            yearly_current["female"].append(int(total_in * female_percent))
+            yearly_current["children"].append(int(total_in * children_percent))
+            yearly_current["unknown"].append(int(total_in * unknown_percent))
 
         # 8. yearly_historical: 不含本季度的前4季度
         yearly_historical = {"male": [], "female": [], "children": [], "unknown": []}
@@ -1022,6 +1379,8 @@ def get_footfall_distribution():
             cur.execute(
                 """
                 SELECT 
+                    COALESCE(SUM(total_people),0),
+                    COALESCE(SUM(in_count), 0),
                     COALESCE(SUM(male_count),0),
                     COALESCE(SUM(female_count),0),
                     COALESCE(SUM(minor_count),0),
@@ -1032,10 +1391,24 @@ def get_footfall_distribution():
                 (q_year, q_num),
             )
             row = cur.fetchone()
-            yearly_historical["male"].append(row[0])
-            yearly_historical["female"].append(row[1])
-            yearly_historical["children"].append(row[2])
-            yearly_historical["unknown"].append(row[3])
+
+            total_people = row[0]
+            total_in = row[1]
+            if total_people > 0:
+                male_percent = float(row[2] / total_people)
+                female_percent = float(row[3] / total_people)
+                children_percent = float(row[4] / total_people)
+                unknown_percent = float(row[5] / total_people)
+            else:
+                male_percent = 0
+                female_percent = 0
+                children_percent = 0
+                unknown_percent = 0
+
+            yearly_historical["male"].append(int(total_in * male_percent))
+            yearly_historical["female"].append(int(total_in * female_percent))
+            yearly_historical["children"].append(int(total_in * children_percent))
+            yearly_historical["unknown"].append(int(total_in * unknown_percent))
 
         # 整理 Part 12 的数据
         part12 = {

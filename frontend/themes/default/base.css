@@ -640,7 +640,7 @@ select:focus {
 	font-size: 40px;
 	line-height: 54px;
 	font-weight: bold;
-	color: #84b1a8;
+	color: #7bada3;
 }
 
 .tablearea .tablebox .subitem .subitem_right {
@@ -685,28 +685,29 @@ select:focus {
 .tablearea .tablebox .subitem .subitem_peakperiod {
 	float: left;
 	width: 100%;
-	font-size: 18px;
-	line-height: 18px;
+	font-size: 20px;
+	line-height: 20px;
 	font-weight: normal;
 	margin-top: 20px;
 }
 
 .tablearea .tablebox .subitem .subitem_peakperiod .valcolor {
 	color: #00C096;
-	font-size: 17px;
+	line-height: 30px;
 }
 
 .tablearea .tablebox .subitem .subitem_lowperiod {
 	float: left;
 	width: 100%;
-	font-size: 18px;
-	line-height: 18px;
+	font-size: 20px;
+	line-height: 20px;
 	font-weight: normal;
-	margin-top: 5px;
+	margin-top: 10px;
 }
 
 .tablearea .tablebox .subitem .subitem_lowperiod .valcolor {
 	color: #00C096;
+	line-height: 30px;
 }
 
 .importarea {
@@ -768,7 +769,7 @@ select:focus {
 }
 
 .importarea .subitem .subitem_left .table_num_2_out {
-	color: #74bcbc;
+	color: #a1bebe;
 }
 
 .importarea .subitem .subitem_left .table_num_3_in {
@@ -1300,4 +1301,8 @@ body {
     transform: translateX(-50%) translateY(-10px);
     opacity: 1;
     color: #ff6b6b;
+}
+
+.totalarea .canvas11area {
+    gap: 10px; 
 }
