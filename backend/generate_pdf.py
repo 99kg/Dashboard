@@ -4,7 +4,14 @@ from datetime import datetime, timedelta
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+    PageBreak,
+)
 from config import DATABASE_CONFIG
 
 # 数据库配置
@@ -18,7 +25,7 @@ def get_db_connection():
 
 def calculate_net_flow_stats(cameras, date_str):
     """
-    计算指定摄像头组合的净流量统计数据
+    计算指定摄像头组合的统计数据
     :param cameras: 摄像头列表
     :param date_str: 日期字符串 (YYYY-MM-DD)
     :return: 包含统计数据的字典
@@ -26,7 +33,8 @@ def calculate_net_flow_stats(cameras, date_str):
     conn = get_db_connection()
     cur = conn.cursor()
     stats = {
-        "total_people": 0,
+        "total_in": 0,
+        "total_out": 0,
         "total_males": 0,
         "total_females": 0,
         "total_children": 0,
@@ -66,27 +74,13 @@ def calculate_net_flow_stats(cameras, date_str):
                 total_in += in_cnt
                 total_out += out_cnt
 
-                # 按进出比例分配性别
-                if total > 0:
-                    # 进入比例
-                    if in_cnt > 0:
-                        in_ratio = in_cnt / total
-                        gender_data["male"] += male * in_ratio
-                        gender_data["female"] += female * in_ratio
-                        gender_data["unknown"] += unknown * in_ratio
-                        minor_float += minor * in_ratio
-
-                    # 离开比例（负贡献）
-                    if out_cnt > 0:
-                        out_ratio = out_cnt / total
-                        gender_data["male"] -= male * out_ratio
-                        gender_data["female"] -= female * out_ratio
-                        gender_data["unknown"] -= unknown * out_ratio
-                        minor_float -= minor * out_ratio
-
-        # 计算净流量（确保非负）
-        net_count = total_in - total_out
-        stats["total_people"] = max(0, net_count)
+                # 按进入比例分配性别和儿童
+                if total > 0 and in_cnt > 0:
+                    in_ratio = in_cnt / total
+                    gender_data["male"] += male * in_ratio
+                    gender_data["female"] += female * in_ratio
+                    gender_data["unknown"] += unknown * in_ratio
+                    minor_float += minor * in_ratio
 
         # 四舍五入并分配余数
         male_int = round(gender_data["male"])
@@ -95,7 +89,7 @@ def calculate_net_flow_stats(cameras, date_str):
         minor_int = round(minor_float)
 
         allocated = male_int + female_int + unknown_int
-        remainder = stats["total_people"] - allocated
+        remainder = total_in - allocated
 
         # 按小数部分分配余数
         fractions = {
@@ -122,12 +116,12 @@ def calculate_net_flow_stats(cameras, date_str):
                 elif key == "unknown" and unknown_int > 0:
                     unknown_int -= 1
 
+        stats["total_in"] = total_in
+        stats["total_out"] = total_out
         stats["total_males"] = male_int
         stats["total_females"] = female_int
         stats["total_unknowns"] = unknown_int
-        stats["total_children"] = min(
-            max(0, minor_int), stats["total_people"]
-        )  # 确保儿童数有效
+        stats["total_children"] = min(max(0, minor_int), total_in)  # 确保儿童数有效
 
     except Exception as e:
         print(f"Error calculating net flow stats: {e}")
@@ -149,7 +143,8 @@ def calculate_individual_stats(camera_name, date_str):
     cur = conn.cursor()
     stats = {
         "name": f"Camera {camera_name}",
-        "total_people": 0,
+        "total_in": 0,
+        "total_out": 0,
         "total_males": 0,
         "total_females": 0,
         "total_children": 0,
@@ -162,11 +157,13 @@ def calculate_individual_stats(camera_name, date_str):
         # 计算累计数据
         query = """
             SELECT 
-                COALESCE(SUM(total_people), 0),
+                COALESCE(SUM(in_count), 0),
+                COALESCE(SUM(out_count), 0),
                 COALESCE(SUM(male_count), 0),
                 COALESCE(SUM(female_count), 0),
                 COALESCE(SUM(minor_count), 0),
-                COALESCE(SUM(unknown_gender_count), 0)
+                COALESCE(SUM(unknown_gender_count), 0),
+                COALESCE(SUM(total_people), 0)
             FROM video_analysis
             WHERE camera_name = %s
             AND start_time >= %s AND end_time <= %s
@@ -176,22 +173,68 @@ def calculate_individual_stats(camera_name, date_str):
         row = cur.fetchone()
 
         if row:
-            stats["total_people"] = row[0]
-            stats["total_males"] = row[1]
-            stats["total_females"] = row[2]
-            stats["total_children"] = row[3]
-            stats["total_unknowns"] = row[4]
+            in_cnt, out_cnt, male, female, minor, unknown, total = row
+            stats["total_in"] = in_cnt
+            stats["total_out"] = out_cnt
 
-        # 计算最高/最低密度时段
+            # 计算性别分布（基于进入人数）
+            if total > 0 and in_cnt > 0:
+                in_ratio = in_cnt / total
+                male_float = male * in_ratio
+                female_float = female * in_ratio
+                unknown_float = unknown * in_ratio
+                minor_float = minor * in_ratio
+
+                # 四舍五入并分配余数
+                male_int = round(male_float)
+                female_int = round(female_float)
+                unknown_int = round(unknown_float)
+                minor_int = round(minor_float)
+
+                allocated = male_int + female_int + unknown_int
+                remainder = in_cnt - allocated
+
+                fractions = {
+                    "male": male_float - male_int,
+                    "female": female_float - female_int,
+                    "unknown": unknown_float - unknown_int,
+                }
+                sorted_fractions = sorted(
+                    fractions.items(), key=lambda x: x[1], reverse=True
+                )
+
+                for i in range(abs(remainder)):
+                    key = sorted_fractions[i % 3][0]
+                    if remainder > 0:
+                        if key == "male":
+                            male_int += 1
+                        elif key == "female":
+                            female_int += 1
+                        else:
+                            unknown_int += 1
+                    else:
+                        if key == "male" and male_int > 0:
+                            male_int -= 1
+                        elif key == "female" and female_int > 0:
+                            female_int -= 1
+                        elif key == "unknown" and unknown_int > 0:
+                            unknown_int -= 1
+
+                stats["total_males"] = male_int
+                stats["total_females"] = female_int
+                stats["total_unknowns"] = unknown_int
+                stats["total_children"] = min(max(0, minor_int), in_cnt)
+
+        # 计算最高/最低密度时段（基于进入人数）
         query = """
             SELECT 
                 TO_CHAR(start_time, 'YYYY/MM/DD HH24:MI:SS') || '~' || 
                 TO_CHAR(end_time, 'HH24:MI:SS') AS period,
-                total_people AS count
+                in_count AS count
             FROM video_analysis
             WHERE camera_name = %s 
             AND start_time >= %s AND end_time <= %s
-            ORDER BY total_people DESC
+            ORDER BY in_count DESC
             LIMIT 1
         """
         cur.execute(query, params)
@@ -199,31 +242,25 @@ def calculate_individual_stats(camera_name, date_str):
         if peak_row and peak_row[1] > 0:
             stats["highest_period"] = f"{peak_row[0]}, {peak_row[1]} pax"
         else:
-            if peak_row and peak_row[1] < 0:
-                stats["highest_period"] = f"{peak_row[0]}, 0 pax"
-            else:
-                stats["highest_period"] = "N/A"
+            stats["highest_period"] = "N/A"
 
         query = """
             SELECT 
                 TO_CHAR(start_time, 'YYYY/MM/DD HH24:MI:SS') || '~' || 
                 TO_CHAR(end_time, 'HH24:MI:SS') AS period,
-                total_people AS count
+                in_count AS count
             FROM video_analysis
             WHERE camera_name = %s 
             AND start_time >= %s AND end_time <= %s
-            ORDER BY total_people ASC
+            ORDER BY in_count ASC
             LIMIT 1
         """
         cur.execute(query, params)
         low_row = cur.fetchone()
-        if low_row and low_row[1] > 0:
+        if low_row:
             stats["lowest_period"] = f"{low_row[0]}, {low_row[1]} pax"
         else:
-            if low_row and low_row[1] < 0:
-                stats["lowest_period"] = f"{low_row[0]}, 0 pax"
-            else:
-                stats["lowest_period"] = "N/A"
+            stats["lowest_period"] = "N/A"
 
     except Exception as e:
         print(f"Error calculating stats for {camera_name}: {e}")
@@ -236,7 +273,7 @@ def calculate_individual_stats(camera_name, date_str):
 
 def calculate_cold_storage_stats(date_str):
     """
-    计算冷库区域统计数据（包含性别和年龄分布）
+    计算冷库区域统计数据
     :param date_str: 日期字符串 (YYYY-MM-DD)
     :return: 包含统计数据的字典
     """
@@ -244,7 +281,8 @@ def calculate_cold_storage_stats(date_str):
     cur = conn.cursor()
     stats = {
         "name": "Cold Storage",
-        "total_people": 0,
+        "total_in": 0,
+        "total_out": 0,
         "total_males": 0,
         "total_females": 0,
         "total_children": 0,
@@ -256,93 +294,100 @@ def calculate_cold_storage_stats(date_str):
     try:
         start_time = f"{date_str} 00:00:00"
         end_time = f"{date_str} 23:59:59"
-        
-        # 初始化性别和年龄分布计数器
-        gender_data = {"male": 0.0, "female": 0.0, "unknown": 0.0}
-        minor_float = 0.0
-        
-        # 获取冷库区域的所有时间段数据
+
+        # 获取A7摄像头的统计数据
         cur.execute(
             """
             SELECT 
-                A7.start_time, A7.end_time,
-                A7.in_count, A7.out_count,
-                A7.male_count, A7.female_count, A7.unknown_gender_count, A7.minor_count, A7.total_people AS a7_total,
-                A6.in_count AS a6_in, A6.out_count AS a6_out,
-                A6.male_count AS a6_male, A6.female_count AS a6_female, 
-                A6.unknown_gender_count AS a6_unknown, A6.minor_count AS a6_minor, A6.total_people AS a6_total
-            FROM video_analysis A7
-            JOIN video_analysis A6 
-                ON A7.start_time = A6.start_time AND A7.end_time = A6.end_time
-            WHERE A7.camera_name = 'A7'
-            AND A6.camera_name = 'A6'
-            AND A7.start_time >= %s AND A7.end_time <= %s
+                COALESCE(SUM(in_count), 0),
+                COALESCE(SUM(out_count), 0),
+                COALESCE(SUM(male_count), 0),
+                COALESCE(SUM(female_count), 0),
+                COALESCE(SUM(minor_count), 0),
+                COALESCE(SUM(unknown_gender_count), 0),
+                COALESCE(SUM(total_people), 0)
+            FROM video_analysis
+            WHERE camera_name = 'A7'
+            AND start_time >= %s AND end_time <= %s
             """,
             (start_time, end_time),
         )
-        rows = cur.fetchall()
+        a7_row = cur.fetchone()
         
-        # 计算净流量和性别/年龄分布
-        for row in rows:
-            # 计算该时间段的冷库净流量
-            segment_net_flow = (row[2] - row[3]) + (row[10] - row[9])
-            
-            # 累加净流量
-            stats["total_people"] += segment_net_flow
-            
-            # 计算A7摄像头的性别/年龄贡献
-            if row[8] > 0:  # A7_total > 0
-                # A7进：正贡献
-                if row[2] > 0:
-                    in_ratio = row[2] / row[8]
-                    gender_data["male"] += row[4] * in_ratio
-                    gender_data["female"] += row[5] * in_ratio
-                    gender_data["unknown"] += row[6] * in_ratio
-                    minor_float += row[7] * in_ratio
-                
-                # A7出：负贡献
-                if row[3] > 0:
-                    out_ratio = row[3] / row[8]
-                    gender_data["male"] -= row[4] * out_ratio
-                    gender_data["female"] -= row[5] * out_ratio
-                    gender_data["unknown"] -= row[6] * out_ratio
-                    minor_float -= row[7] * out_ratio
-            
-            # 计算A6摄像头的性别/年龄贡献
-            if row[15] > 0:  # A6_total > 0
-                # A6出（进入冷库区域）：正贡献
-                if row[10] > 0:
-                    out_ratio = row[10] / row[15]
-                    gender_data["male"] += row[11] * out_ratio
-                    gender_data["female"] += row[12] * out_ratio
-                    gender_data["unknown"] += row[13] * out_ratio
-                    minor_float += row[14] * out_ratio
-                
-                # A6进（离开冷库区域）：负贡献
-                if row[9] > 0:
-                    in_ratio = row[9] / row[15]
-                    gender_data["male"] -= row[11] * in_ratio
-                    gender_data["female"] -= row[12] * in_ratio
-                    gender_data["unknown"] -= row[13] * in_ratio
-                    minor_float -= row[14] * in_ratio
+        # 获取A6摄像头的统计数据
+        cur.execute(
+            """
+            SELECT 
+                COALESCE(SUM(in_count), 0),
+                COALESCE(SUM(out_count), 0),
+                COALESCE(SUM(male_count), 0),
+                COALESCE(SUM(female_count), 0),
+                COALESCE(SUM(minor_count), 0),
+                COALESCE(SUM(unknown_gender_count), 0),
+                COALESCE(SUM(total_people), 0)
+            FROM video_analysis
+            WHERE camera_name = 'A6'
+            AND start_time >= %s AND end_time <= %s
+            """,
+            (start_time, end_time),
+        )
+        a6_row = cur.fetchone()
+
+        # 计算冷库区域的总进出人数
+        a7_in = a7_row[0] if a7_row else 0
+        a6_out = a6_row[1] if a6_row else 0  # A6的离开人数对应进入冷库
+        stats["total_in"] = a7_in + a6_out
         
-        # 确保净流量非负
-        stats["total_people"] = max(0, stats["total_people"])
-        
+        # 计算冷库区域的总离开人数
+        a7_out = a7_row[1] if a7_row else 0
+        a6_in = a6_row[0] if a6_row else 0   # A6的进入人数对应离开冷库
+        stats["total_out"] = a7_out + a6_in
+
+        # 计算A7的性别和儿童比例
+        a7_total = a7_row[6] if a7_row and a7_row[6] > 0 else 1
+        a7_male_ratio = a7_row[2] / a7_total
+        a7_female_ratio = a7_row[3] / a7_total
+        a7_minor_ratio = a7_row[4] / a7_total
+        a7_unknown_ratio = a7_row[5] / a7_total
+
+        # 计算A6的性别和儿童比例
+        a6_total = a6_row[6] if a6_row and a6_row[6] > 0 else 1
+        a6_male_ratio = a6_row[2] / a6_total
+        a6_female_ratio = a6_row[3] / a6_total
+        a6_minor_ratio = a6_row[4] / a6_total
+        a6_unknown_ratio = a6_row[5] / a6_total
+
+        # 计算冷库区域的性别和儿童数量
+        a7_males = a7_in * a7_male_ratio
+        a7_females = a7_in * a7_female_ratio
+        a7_children = a7_in * a7_minor_ratio
+        a7_unknowns = a7_in * a7_unknown_ratio
+
+        a6_males = a6_out * a6_male_ratio
+        a6_females = a6_out * a6_female_ratio
+        a6_children = a6_out * a6_minor_ratio
+        a6_unknowns = a6_out * a6_unknown_ratio
+
+        # 合并A7和A6的数据
+        total_males = a7_males + a6_males
+        total_females = a7_females + a6_females
+        total_children = a7_children + a6_children
+        total_unknowns = a7_unknowns + a6_unknowns
+
         # 四舍五入并分配余数
-        male_int = round(gender_data["male"])
-        female_int = round(gender_data["female"])
-        unknown_int = round(gender_data["unknown"])
-        minor_int = round(minor_float)
+        male_int = round(total_males)
+        female_int = round(total_females)
+        unknown_int = round(total_unknowns)
+        minor_int = round(total_children)
 
         allocated = male_int + female_int + unknown_int
-        remainder = stats["total_people"] - allocated
+        remainder = stats["total_in"] - allocated
 
         # 按小数部分分配余数
         fractions = {
-            "male": gender_data["male"] - male_int,
-            "female": gender_data["female"] - female_int,
-            "unknown": gender_data["unknown"] - unknown_int,
+            "male": total_males - male_int,
+            "female": total_females - female_int,
+            "unknown": total_unknowns - unknown_int,
         }
         sorted_fractions = sorted(fractions.items(), key=lambda x: x[1], reverse=True)
 
@@ -366,24 +411,22 @@ def calculate_cold_storage_stats(date_str):
         stats["total_males"] = male_int
         stats["total_females"] = female_int
         stats["total_unknowns"] = unknown_int
-        stats["total_children"] = min(
-            max(0, minor_int), stats["total_people"]
-        )
+        stats["total_children"] = min(max(0, minor_int), stats["total_in"])
 
-        # 计算最高密度时段
+        # 计算最高密度时段（基于进入人数）
         cur.execute(
             """
             SELECT 
                 TO_CHAR(A7.start_time, 'YYYY/MM/DD HH24:MI:SS') || '~' || 
                 TO_CHAR(A7.end_time, 'HH24:MI:SS') AS period,
-                (A7.in_count - A7.out_count + A6.out_count - A6.in_count) AS count
+                (A7.in_count + A6.out_count) AS count
             FROM video_analysis A7
             JOIN video_analysis A6 
                 ON A7.start_time = A6.start_time AND A7.end_time = A6.end_time
             WHERE A7.camera_name = 'A7'
             AND A6.camera_name = 'A6'
             AND A7.start_time >= %s AND A7.end_time <= %s
-            ORDER BY (A7.in_count - A7.out_count + A6.out_count - A6.in_count) DESC
+            ORDER BY (A7.in_count + A6.out_count) DESC
             LIMIT 1
             """,
             (start_time, end_time),
@@ -392,10 +435,7 @@ def calculate_cold_storage_stats(date_str):
         if peak_row and peak_row[1] >= 0:
             stats["highest_period"] = f"{peak_row[0]}, {peak_row[1]} pax"
         else:
-            if peak_row and peak_row[1] < 0:
-                stats["highest_period"] = f"{peak_row[0]}, 0 pax"
-            else:
-                stats["highest_period"] = "N/A"
+            stats["highest_period"] = "N/A"
 
         # 计算最低密度时段
         cur.execute(
@@ -403,14 +443,14 @@ def calculate_cold_storage_stats(date_str):
             SELECT 
                 TO_CHAR(A7.start_time, 'YYYY/MM/DD HH24:MI:SS') || '~' || 
                 TO_CHAR(A7.end_time, 'HH24:MI:SS') AS period,
-                (A7.in_count - A7.out_count + A6.out_count - A6.in_count) AS count
+                (A7.in_count + A6.out_count) AS count
             FROM video_analysis A7
             JOIN video_analysis A6 
                 ON A7.start_time = A6.start_time AND A7.end_time = A6.end_time
             WHERE A7.camera_name = 'A7'
             AND A6.camera_name = 'A6'
             AND A7.start_time >= %s AND A7.end_time <= %s
-            ORDER BY (A7.in_count - A7.out_count + A6.out_count - A6.in_count) ASC
+            ORDER BY (A7.in_count + A6.out_count) ASC
             LIMIT 1
             """,
             (start_time, end_time),
@@ -419,10 +459,7 @@ def calculate_cold_storage_stats(date_str):
         if low_row and low_row[1] >= 0:
             stats["lowest_period"] = f"{low_row[0]}, {low_row[1]} pax"
         else:
-            if low_row and low_row[1] < 0:
-                stats["lowest_period"] = f"{low_row[0]}, 0 pax"
-            else:
-                stats["lowest_period"] = "N/A"
+            stats["lowest_period"] = "N/A"
 
     except Exception as e:
         print(f"Error calculating cold storage stats: {e}")
@@ -440,9 +477,11 @@ def calculate_area_stats(area_name, cameras, date_str):
     :param date_str: 日期字符串 (YYYY-MM-DD)
     :return: 包含统计数据的字典
     """
-    # 使用净流量计算函数（保持原逻辑）
+    # 使用修改后的计算函数
     stats = calculate_net_flow_stats(cameras, date_str)
     stats["name"] = area_name
+    stats["highest_period"] = "N/A"
+    stats["lowest_period"] = "N/A"
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -452,56 +491,44 @@ def calculate_area_stats(area_name, cameras, date_str):
         placeholders = ",".join(["%s"] * len(cameras))
         params = cameras + [start_time, end_time]
 
-        # 使用净流量计算最高密度时段
+        # 使用进入人数计算最高密度时段
         query = f"""
             SELECT 
                 TO_CHAR(start_time, 'YYYY/MM/DD HH24:MI:SS') || '~' || 
                 TO_CHAR(end_time, 'HH24:MI:SS') AS period,
-                SUM(in_count - out_count) AS count
+                SUM(in_count) AS count
             FROM video_analysis
             WHERE camera_name IN ({placeholders})
             AND start_time >= %s AND end_time <= %s
             GROUP BY start_time, end_time
-            ORDER BY SUM(in_count - out_count) DESC
+            ORDER BY SUM(in_count) DESC
             LIMIT 1
         """
         cur.execute(query, params)
         peak_row = cur.fetchone()
         if peak_row and peak_row[1] >= 0:
             stats["highest_period"] = f"{peak_row[0]}, {peak_row[1]} pax"
-        else:
-            if peak_row and peak_row[1] < 0:
-                stats["highest_period"] = f"{peak_row[0]}, 0 pax"
-            else:
-                stats["highest_period"] = "N/A"
 
-        # 使用净流量计算最低密度时段
+        # 使用进入人数计算最低密度时段
         query = f"""
             SELECT 
                 TO_CHAR(start_time, 'YYYY/MM/DD HH24:MI:SS') || '~' || 
                 TO_CHAR(end_time, 'HH24:MI:SS') AS period,
-                SUM(in_count - out_count) AS count
+                SUM(in_count) AS count
             FROM video_analysis
             WHERE camera_name IN ({placeholders})
             AND start_time >= %s AND end_time <= %s
             GROUP BY start_time, end_time
-            ORDER BY SUM(in_count - out_count) ASC
+            ORDER BY SUM(in_count) ASC
             LIMIT 1
         """
         cur.execute(query, params)
         low_row = cur.fetchone()
         if low_row and low_row[1] >= 0:
             stats["lowest_period"] = f"{low_row[0]}, {low_row[1]} pax"
-        else:
-            if low_row and low_row[1] < 0:
-                stats["lowest_period"] = f"{low_row[0]}, 0 pax"
-            else:
-                stats["lowest_period"] = "N/A"
 
     except Exception as e:
         print(f"Error calculating periods for {area_name}: {e}")
-        stats["highest_period"] = "N/A"
-        stats["lowest_period"] = "N/A"
     finally:
         cur.close()
         conn.close()
@@ -593,39 +620,35 @@ def generate_pdf_report(stats_data, report_date, output_path):
     # 第三页：Camera A3 + Camera A2
     groups = [
         # 第一页组
-        [
-            stats_data[0],  # Cold Storage
-            stats_data[1]   # 2nd Floor
-        ],
+        [stats_data[0], stats_data[1]],  # Cold Storage  # 2nd Floor
         # 第二页组
-        [
-            stats_data[2],  # Canteen Area
-            stats_data[3]   # Camera A1
-        ],
+        [stats_data[2], stats_data[3]],  # Canteen Area  # Camera A1
         # 第三页组
-        [
-            stats_data[4],  # Camera A3
-            stats_data[5]   # Camera A2
-        ]
+        [stats_data[4], stats_data[5]],  # Camera A3  # Camera A2
     ]
 
     # 为每个分组生成页面内容
     for group_index, group in enumerate(groups):
 
-        elements.append(Paragraph(f"Analysis Report - Page{group_index + 1}", custom_styles["Title"]))
+        elements.append(
+            Paragraph(
+                f"Analysis Report - Page{group_index + 1}", custom_styles["Title"]
+            )
+        )
         elements.append(
             Paragraph(f"Date of Report: {report_date}", custom_styles["Subtitle"])
         )
         elements.append(Spacer(1, 24))
-        
+
         # 处理分组内的每个区域
         for area_index, area in enumerate(group):
             elements.append(Paragraph(area["name"], custom_styles["SectionHeader"]))
-            
-            # 创建数据表格
+
+            # 创建数据表格（使用新格式）
             data = [
                 ["Metric", "Value"],
-                ["Total number of People", area["total_people"]],
+                ["IN", area["total_in"]],
+                ["OUT", area["total_out"]],
                 ["Total number of Males", area["total_males"]],
                 ["Total number of Females", area["total_females"]],
                 ["Total number of Children", area["total_children"]],
@@ -633,7 +656,7 @@ def generate_pdf_report(stats_data, report_date, output_path):
                 ["Highest Density of People", area["highest_period"]],
                 ["Lowest Density of People", area["lowest_period"]],
             ]
-            
+
             table = Table(data)
             table.setStyle(
                 TableStyle(
@@ -650,13 +673,13 @@ def generate_pdf_report(stats_data, report_date, output_path):
                     ]
                 )
             )
-            
+
             elements.append(table)
-            
+
             # 在同一页内的区域之间添加间隔（最后一个区域后不添加）
             if area_index < len(group) - 1:
                 elements.append(Spacer(1, 24))
-        
+
         # 在分组之间添加分页符（最后一组后不添加）
         if group_index < len(groups) - 1:
             elements.append(PageBreak())
