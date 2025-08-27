@@ -294,25 +294,26 @@ def get_dashboard_data():
         # Part 1: Total visitors and comparison
         cur.execute(
             """
-            SELECT COALESCE(SUM(total_people), 0) 
+            SELECT COALESCE(SUM(in_count), 0) ,
+            COALESCE(SUM(out_count), 0) 
             FROM video_analysis
             WHERE start_time >= %s AND end_time <= %s
         """,
             (date_start, date_end),
         )
-        total_visitors = cur.fetchone()[0]
+        total_visitors_in, total_visitors_out = cur.fetchone()
 
         cur.execute(
             """
-            SELECT COALESCE(SUM(total_people), 0) 
+            SELECT COALESCE(SUM(in_count), 0)
             FROM video_analysis
             WHERE start_time >= %s AND end_time <= %s
         """,
             (ref_date_start, ref_date_end),
         )
-        reference_visitors = cur.fetchone()[0]
+        reference_visitors_in = cur.fetchone()[0]
 
-        total_percent_change = calc_percent_change(total_visitors, reference_visitors)
+        total_percent_change = calc_percent_change(total_visitors_in, reference_visitors_in)
 
         # Part 2: Peak and Low periods
         cur.execute(
@@ -762,8 +763,9 @@ def get_dashboard_data():
         return jsonify(
             {
                 "part1": {
-                    "total": total_visitors,
-                    "compare": reference_visitors,
+                    "total_in": total_visitors_in,
+                    "total_out": total_visitors_out,
+                    "compare": reference_visitors_in,
                     "percent_change": total_percent_change,
                 },
                 "part2": {"peak_period": peak_period, "low_period": low_period},

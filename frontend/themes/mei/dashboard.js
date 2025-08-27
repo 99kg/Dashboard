@@ -203,7 +203,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // part1：总访问量
         if (data.part1) {
-            document.getElementById('part1-total').textContent = data.part1.total || '-';
+            document.getElementById('part1-total-in').textContent = data.part1.total_in || '-';
+            document.getElementById('part1-total-out').textContent = data.part1.total_out || '-';
             document.getElementById('part1-compare').textContent = data.part1.compare || '-';
             const part1Change = document.getElementById('part1-change');
             part1Change.textContent = data.part1.percent_change ? `\u00A0\u00A0${data.part1.percent_change}%` : '-';

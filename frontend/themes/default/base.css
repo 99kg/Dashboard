@@ -350,13 +350,22 @@ select:focus {
 	margin-top: 12px;
 }
 
-.totalarea .innercontent .leftarea .summaryarea .bigtextshow .text_total_val {
+.totalarea .innercontent .leftarea .summaryarea .bigtextshow .text_total_val-in {
 	float: left;
 	width: 100%;
-	font-size: 58px;
+	font-size: 40px;
 	line-height: 64px;
 	font-weight: bold;
 	color: #FA8338;
+}
+
+.totalarea .innercontent .leftarea .summaryarea .bigtextshow .text_total_val-out {
+	float: left;
+	width: 100%;
+	font-size: 40px;
+	line-height: 64px;
+	font-weight: bold;
+	color: #ddb8a1;
 }
 
 .totalarea .innercontent .leftarea .summaryarea .bigtextshow .compare_name {
@@ -364,11 +373,11 @@ select:focus {
 	width: 100%;
 	font-size: 18px;
 	font-weight: bold;
-	color: #D5D5D5;
 	margin-top: 25px;
 }
 
 .totalarea .innercontent .leftarea .summaryarea .bigtextshow .compare_content {
+	color: #D5D5D5;
 	float: left;
 	width: 100%;
 	margin-top: 5px;
@@ -377,28 +386,25 @@ select:focus {
 }
 
 .totalarea .innercontent .leftarea .summaryarea .bigtextshow .compare_content .compare_val {
-	/* float: left; */
 	font-size: 20px;
 	line-height: 20px;
 	font-weight: bold;
 }
 
-.totalarea .innercontent .leftarea .summaryarea .bigtextshow .compare_content .compare_percent {
-    font-size: 16px;
-    line-height: 1;
+.totalarea .innercontent .leftarea .summaryarea .bigtextshow .compare_content .compare_percent,
+.totalarea .innercontent .leftarea .summaryarea .bigtextshow .compare_content .result-value.percent-negative,
+.totalarea .innercontent .leftarea .summaryarea .bigtextshow .compare_content .result-value.percent-positive {
+    font-size: 18px;
     margin-top: 0;
-    margin-left: 20px;
-    font-weight: normal;
-    color: #15AD63;
-    /* float: left; */
+    margin-left: 8px;
+    font-weight: bold;
 }
 
 .totalarea .innercontent .leftarea .summaryarea .bigtextshow .compare_content .compare_up, .comparison_up1, .comparison_up2, .comparison_up3, .comparison_up4{
-	/* float: left; */
-	width: 16px;
-	height: 16px;
+	width: 14px;
+	height: 14px;
 	margin-left: 6px;
-	margin-top: 0px;
+	margin-top: 2px;
 }
 
 .totalarea .innercontent .leftarea .summaryarea .bigpictureshow {
@@ -415,7 +421,7 @@ select:focus {
 	font-size: 20px;
 	line-height: 30px;
 	font-weight: normal;
-	margin-top: 35px;
+	margin-top: 45px;
 }
 
 .totalarea .innercontent .leftarea .summaryarea .big_peakperiod span {
@@ -459,6 +465,7 @@ select:focus {
 .genderbreakdownarea .innercontent .genderbreakdowncontent {
 	float: left;
 	width: 100%;
+	margin-left: -20px;
 }
 
 .genderbreakdownarea .innercontent .genderbreakdowncontent .list {
@@ -493,12 +500,12 @@ select:focus {
 .genderbreakdownarea .innercontent .genderbreakdowncontent .list .clumn_value {
 	float: left;
 	width: 50%;
-	margin-left: 8px;
+	margin-left: 25px;
 }
 
 .genderbreakdownarea .innercontent .genderbreakdowncontent .list .clumn_value .value_green {
 	float: left;
-	font-size: 38px;
+	font-size: 35px;
 	line-height: 44px;
 	margin: 9px -20px;
 	font-weight: bold;
@@ -507,7 +514,7 @@ select:focus {
 
 .genderbreakdownarea .innercontent .genderbreakdowncontent .list .clumn_value .value_pink {
 	float: left;
-	font-size: 38px;
+	font-size: 35px;
 	line-height: 44px;
 	margin: 9px -20px;
 	font-weight: bold;
@@ -520,8 +527,9 @@ select:focus {
 }
 
 .genderbreakdownarea .innercontent .genderbreakdowncontent .list .clumn_percent .percentright {
-	float: right;
+	float: left;
 	margin: 21px 0px;
+	margin-left: 15px;
 }
 
 .genderbreakdownarea .innercontent .genderbreakdowncontent .list .clumn_percent .value_green {
@@ -565,11 +573,10 @@ select:focus {
 .value_up2,
 .value_up3,
 .value_up4 {
-    width: 14px;
-    height: 14px;
-    margin: 0;
-    display: inline-block;
-    vertical-align: middle;
+	width: 14px;
+	height: 14px;
+	margin-left: 6px;
+	margin-top: 2px;
 }
 
 .tablearea {
@@ -612,19 +619,28 @@ select:focus {
 
 .tablearea .tablebox .subitem .subitem_left .table_name {
 	float: left;
-	width: 100%;
+	width: 25%;
 	font-weight: bold;
-	font-size: 30px;
-	line-height: 30px;
+	font-size: 29px;
+	line-height: 27px;
 }
 
-.tablearea .tablebox .subitem .subitem_left .table_num {
+.tablearea .tablebox .subitem .subitem_left .table_num_in {
 	float: left;
 	width: 100%;
-	font-size: 48px;
+	font-size: 40px;
 	line-height: 54px;
 	font-weight: bold;
 	color: #00C096;
+}
+
+.tablearea .tablebox .subitem .subitem_left .table_num_out {
+	float: left;
+	width: 100%;
+	font-size: 40px;
+	line-height: 54px;
+	font-weight: bold;
+	color: #84b1a8;
 }
 
 .tablearea .tablebox .subitem .subitem_right {
@@ -672,7 +688,7 @@ select:focus {
 	font-size: 18px;
 	line-height: 18px;
 	font-weight: normal;
-	margin-top: 18px;
+	margin-top: 20px;
 }
 
 .tablearea .tablebox .subitem .subitem_peakperiod .valcolor {
@@ -733,14 +749,42 @@ select:focus {
 .importarea .subitem .subitem_left .table_num {
 	float: left;
 	width: 100%;
-	font-size: 38px;
-	line-height: 44px;
+	font-size: 30px;
+	line-height: 30px;
 	font-weight: bold;
 	margin-top: 10px;
 }
 
-.importarea .subitem .subitem_left .table_num_1 {
+.importarea .subitem .subitem_left .table_num_1_in {
 	color: #DC2D65;
+}
+
+.importarea .subitem .subitem_left .table_num_1_out {
+	color: #efa5bd;
+}
+
+.importarea .subitem .subitem_left .table_num_2_in {
+	color: #13C4C4;
+}
+
+.importarea .subitem .subitem_left .table_num_2_out {
+	color: #74bcbc;
+}
+
+.importarea .subitem .subitem_left .table_num_3_in {
+	color: #5D4EB5;
+}
+
+.importarea .subitem .subitem_left .table_num_3_out {
+	color: #9d97be;
+}
+
+.importarea .subitem .subitem_left .table_num_4_in {
+	color: #24C4EF;
+}
+
+.importarea .subitem .subitem_left .table_num_4_out {
+	color: #abe4f4;
 }
 
 .importarea .subitem .subitem_left .comparison_title {
@@ -748,15 +792,16 @@ select:focus {
 	width: 100%;
 	font-size: 14px;
 	font-weight: bold;
-	color: #D5D5D5;
-	margin-top: 15px;
+	margin-top: 20px;
 }
 
 .importarea .subitem .subitem_left .comparison_content {
+	color: #D5D5D5;
 	display: flex;
 	align-items: center;
 	width: 100%;
 	margin-top: 5px;
+	width: 12px;
 }
 
 .importarea .subitem .subitem_left .comparison_content .comparison_num {
@@ -767,21 +812,13 @@ select:focus {
 	font-weight: bold;
 }
 
-.importarea .subitem .subitem_left .comparison_content .comparison_percent {
-    font-size: 12px;
-    line-height: 1;
-    margin-left: 8px;
-    font-weight: normal;
-    color: #15AD63;
+.importarea .subitem .subitem_left .comparison_content .comparison_percent,
+.importarea .subitem .subitem_left .comparison_content .result-value.percent-negative,
+.importarea .subitem .subitem_left .comparison_content .result-value.percent-positive {
+    font-size: 16px;
     margin-top: 0;
-}
-
-.importarea .subitem .subitem_left .comparison_content {
-	float: left;
-	width: 12px;
-	height: 12px;
-	margin-left: 6px;
-	margin-top: 4px;
+    margin-left: 8px;
+    font-weight: bold;
 }
 
 .importarea .subitem .subitem_right {
@@ -793,7 +830,7 @@ select:focus {
 	float: left;
 	width: calc(100% - 40px);
 	margin-left: 20px;
-	margin-top: -20px;
+	margin-top: -21px;
 }
 
 .importarea .subitem .subitem_right .canvas_box canvas {
@@ -804,9 +841,9 @@ select:focus {
 .importarea .subitem .subitem_right .barshow_area {
 	float: left;
 	width: calc(100% + 60px);
-	margin-left: -50px;
-	margin-top: -17px;
-	font-size: 12px;
+	margin-left: -46px;
+	margin-top: -5px;
+	font-size: 11px;
 }
 
 .importarea .subitem .subitem_right .barshow_area .fouritem {
@@ -1216,10 +1253,18 @@ body {
 }
 
 .camera-title {
-    cursor: pointer;
+	cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
 	transform-origin: center;
+	transition: all 0.3s ease;
+	color: #344DA0;
+	/* 边框背景颜色 */
+	background: #c9bbbb;
+	/* 边框宽度 */
+	border-width: 1px;
+	/* 边框圆角 */
+	border-radius: 10px;
 }
 
 .camera-title:hover {
