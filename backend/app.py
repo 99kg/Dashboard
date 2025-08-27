@@ -665,24 +665,6 @@ def get_dashboard_data():
         else:
             a8_gender = get_gender_net_count(["A8"], date_start, date_end)
 
-        # Part 9: Canteen (A4 and A5)
-        canteen_value = get_net_count(["A4", "A5"], date_start, date_end)
-        canteen_ref = get_net_count(["A4", "A5"], ref_date_start, ref_date_end)
-
-        # 确保canteen_value净流量不为负数
-        if canteen_value < 0:
-            canteen_value = 0
-        # 确保canteen_ref净流量不为负数
-        if canteen_ref < 0:
-            canteen_ref = 0
-
-        canteen_percent = calc_percent_change(canteen_value, canteen_ref)
-
-        if canteen_value == 0:
-            canteen_gender = {"male": 0, "female": 0, "unknown": 0}
-        else:
-            canteen_gender = get_gender_net_count(["A4", "A5"], date_start, date_end)
-
         # Part 10: 2nd Floor (A2, A3, A1, A6)
         second_floor_value = get_net_count(
             ["A2", "A3", "A1", "A6"], date_start, date_end
@@ -707,6 +689,31 @@ def get_dashboard_data():
                 ["A2", "A3", "A1", "A6"], date_start, date_end
             )
 
+        # Part 9: Canteen (A4 and A5)
+        canteen_value = get_net_count(["A4", "A5"], date_start, date_end)
+        canteen_ref = get_net_count(["A4", "A5"], ref_date_start, ref_date_end)
+
+        # 确保canteen_value净流量不为负数
+        if canteen_value < 0:
+            canteen_value = 0
+        # 确保canteen_ref净流量不为负数
+        if canteen_ref < 0:
+            canteen_ref = 0
+
+        # 确保canteen区域人数不超过2nd Floor区域人数，防止数据错误
+        if canteen_value > second_floor_value:
+            canteen_value = second_floor_value
+        
+        if canteen_ref > second_floor_ref:
+            canteen_ref = second_floor_ref
+
+        canteen_percent = calc_percent_change(canteen_value, canteen_ref)
+
+        if canteen_value == 0:
+            canteen_gender = {"male": 0, "female": 0, "unknown": 0}
+        else:
+            canteen_gender = get_gender_net_count(["A4", "A5"], date_start, date_end)
+        
         # Part 11: Gender breakdown
         cur.execute(
             """

@@ -213,10 +213,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (data.part1.percent_change > 0) {
                 $('.compare_up').show();
+                $('.compare_up').css('visibility', 'visible');
                 $('#part1-change').css('color', '#15AD63');
                 $('.compare_up').attr('src', './themes/default/images/icon_sanjiaoxing_top_green.png');
             } else if (data.part1.percent_change < 0) {
                 $('.compare_up').show();
+                $('.compare_up').css('visibility', 'visible');
                 $('#part1-change').css('color', '#DC2D65');
                 $('.compare_up').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
             } else {
@@ -254,10 +256,12 @@ document.addEventListener('DOMContentLoaded', function () {
             maleChange.textContent = data.part11.male.percent_change ? `${data.part11.male.percent_change}%` : '-';
             if (data.part11.male.percent_change > 0) {
                 $('.value_up1').show();
+                $('.value_up1').css('visibility', 'visible');
                 $('#part11-male-change').css('color', '#15AD63');
                 $('.value_up1').attr('src', './themes/default/images/icon_sanjiaoxing_top_green.png');
             } else if (data.part11.male.percent_change < 0) {
                 $('.value_up1').show();
+                $('.value_up1').css('visibility', 'visible');
                 $('#part11-male-change').css('color', '#DC2D65');
                 $('.value_up1').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
             } else {
@@ -271,10 +275,12 @@ document.addEventListener('DOMContentLoaded', function () {
             femaleChange.textContent = data.part11.female.percent_change ? `${data.part11.female.percent_change}%` : '-';
             if (data.part11.female.percent_change > 0) {
                 $('.value_up2').show();
+                $('.value_up2').css('visibility', 'visible');
                 $('#part11-female-change').css('color', '#15AD63');
                 $('.value_up2').attr('src', './themes/default/images/icon_sanjiaoxing_top_green.png');
             } else if (data.part11.female.percent_change < 0) {
                 $('.value_up2').show();
+                $('.value_up2').css('visibility', 'visible');
                 $('#part11-female-change').css('color', '#DC2D65');
                 $('.value_up2').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
             } else {
@@ -288,10 +294,12 @@ document.addEventListener('DOMContentLoaded', function () {
             childrenChange.textContent = data.part11.children.percent_change ? `${data.part11.children.percent_change}%` : '-';
             if (data.part11.children.percent_change > 0) {
                 $('.value_up3').show();
+                $('.value_up3').css('visibility', 'visible');
                 $('#part11-children-change').css('color', '#15AD63');
                 $('.value_up3').attr('src', './themes/default/images/icon_sanjiaoxing_top_green.png');
             } else if (data.part11.children.percent_change < 0) {
                 $('.value_up3').show();
+                $('.value_up3').css('visibility', 'visible');
                 $('#part11-children-change').css('color', '#DC2D65');
                 $('.value_up3').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
             } else {
@@ -305,10 +313,12 @@ document.addEventListener('DOMContentLoaded', function () {
             unknownChange.textContent = data.part11.unknown.percent_change ? `${data.part11.unknown.percent_change}%` : '-';
             if (data.part11.unknown.percent_change > 0) {
                 $('.value_up4').show();
+                $('.value_up4').css('visibility', 'visible');
                 $('#part11-unknown-change').css('color', '#15AD63');
                 $('.value_up4').attr('src', './themes/default/images/icon_sanjiaoxing_top_green.png');
             } else if (data.part11.unknown.percent_change < 0) {
                 $('.value_up4').show();
+                $('.value_up4').css('visibility', 'visible');
                 $('#part11-unknown-change').css('color', '#DC2D65');
                 $('.value_up4').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
             } else {
@@ -345,36 +355,44 @@ document.addEventListener('DOMContentLoaded', function () {
         if (stats.percent_change > 0) {
             if (partId === 'part7') {
                 $('.comparison_up1').show();
+                $('.comparison_up1').css('visibility', 'visible');
                 $('#part7-change').css('color', '#15AD63');
                 $('.comparison_up1').attr('src', './themes/default/images/icon_sanjiaoxing_top_green.png');
             } else if (partId === 'part8') {
                 $('.comparison_up2').show();
+                $('.comparison_up2').css('visibility', 'visible');
                 $('#part8-change').css('color', '#15AD63');
                 $('.comparison_up2').attr('src', './themes/default/images/icon_sanjiaoxing_top_green.png');
             } else if (partId === 'part9') {
                 $('.comparison_up3').show();
+                $('.comparison_up3').css('visibility', 'visible');
                 $('#part9-change').css('color', '#15AD63');
                 $('.comparison_up3').attr('src', './themes/default/images/icon_sanjiaoxing_top_green.png');
             } else {
                 $('.comparison_up4').show();
+                $('.comparison_up4').css('visibility', 'visible');
                 $('#part10-change').css('color', '#15AD63');
                 $('.comparison_up4').attr('src', './themes/default/images/icon_sanjiaoxing_top_green.png');
             }
         } else if (stats.percent_change < 0) {
             if (partId === 'part7') {
                 $('.comparison_up1').show();
+                $('.comparison_up1').css('visibility', 'visible');
                 $('#part7-change').css('color', '#DC2D65');
                 $('.comparison_up1').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
             } else if (partId === 'part8') {
                 $('.comparison_up2').show();
+                $('.comparison_up2').css('visibility', 'visible');
                 $('#part8-change').css('color', '#DC2D65');
                 $('.comparison_up2').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
             } else if (partId === 'part9') {
                 $('.comparison_up3').show();
+                $('.comparison_up3').css('visibility', 'visible');
                 $('#part9-change').css('color', '#DC2D65');
                 $('.comparison_up3').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
             } else {
                 $('.comparison_up4').show();
+                $('.comparison_up4').css('visibility', 'visible');
                 $('#part10-change').css('color', '#DC2D65');
                 $('.comparison_up4').attr('src', './themes/default/images/icon_sanjiaoxing_bottom_red.png');
             }
