@@ -55,7 +55,7 @@ def get_gender_count(
     floats = {
         "male": male_float - male_int,
         "female": female_float - female_int,
-        "unknown": unknown_float - unknown_int,
+        "unknown": unknown_float - unknown_int
     }
 
     # 分配剩余人数（按照小数部分大小降序分配）
@@ -126,18 +126,18 @@ def calculate_individual_stats(camera_name, date_str):
             # 计算性别分布（基于进入人数）
             if total > 0 and total_in > 0:
                 # 计算各性别百分比
-                male_percent = (male / total) * 100 if male else 0
-                female_percent = (female / total) * 100 if female else 0
-                unknown_percent = (unknown / total) * 100 if unknown else 0
+                male_percent = "{:.1f}".format((male / total) * 100 if male else 0)
+                female_percent = "{:.1f}".format((female / total) * 100 if female else 0)
+                unknown_percent = "{:.1f}".format((unknown / total) * 100 if unknown else 0)
                 # 计算儿童百分比（儿童不参与性别分配，单独计算）
                 minor_percent = (minor / total) * 100 if minor else 0
 
                 # 使用get_gender_count函数计算整数性别分布
                 male_int, female_int, unknown_int = get_gender_count(
                     total_in,
-                    str(male_percent),
-                    str(female_percent),
-                    str(unknown_percent),
+                    male_percent,
+                    female_percent,
+                    unknown_percent,
                 )
                 stats["total_males"] = male_int
                 stats["total_females"] = female_int
@@ -286,14 +286,14 @@ def calculate_cold_storage_stats(date_str):
 
         # 计算A7部分的性别分布（基于进入冷库的部分，即A7_in）
         if a7_total > 0 and a7_in > 0:
-            a7_male_percent = (a7_male / a7_total) * 100
-            a7_female_percent = (a7_female / a7_total) * 100
-            a7_unknown_percent = (a7_unknown / a7_total) * 100
+            a7_male_percent = "{:.1f}".format((a7_male / a7_total) * 100)
+            a7_female_percent = "{:.1f}".format((a7_female / a7_total) * 100)
+            a7_unknown_percent = "{:.1f}".format((a7_unknown / a7_total) * 100)
             a7_males, a7_females, a7_unknowns = get_gender_count(
                 a7_in,
-                str(a7_male_percent),
-                str(a7_female_percent),
-                str(a7_unknown_percent),
+                a7_male_percent,
+                a7_female_percent,
+                a7_unknown_percent,
             )
             # 计算儿童（向下取整）
             a7_minor_percent = (a7_minor / a7_total) * 100
@@ -303,14 +303,14 @@ def calculate_cold_storage_stats(date_str):
 
         # 计算A6部分的性别分布（基于离开A6的人数，即a6_out，这部分人进入冷库）
         if a6_total > 0 and a6_out > 0:
-            a6_male_percent = (a6_male / a6_total) * 100
-            a6_female_percent = (a6_female / a6_total) * 100
-            a6_unknown_percent = (a6_unknown / a6_total) * 100
+            a6_male_percent = "{:.1f}".format((a6_male / a6_total) * 100)
+            a6_female_percent = "{:.1f}".format((a6_female / a6_total) * 100)
+            a6_unknown_percent = "{:.1f}".format((a6_unknown / a6_total) * 100)
             a6_males, a6_females, a6_unknowns = get_gender_count(
                 a6_out,
-                str(a6_male_percent),
-                str(a6_female_percent),
-                str(a6_unknown_percent),
+                a6_male_percent,
+                a6_female_percent,
+                a6_unknown_percent,
             )
             # 计算儿童（向下取整）
             a6_minor_percent = (a6_minor / a6_total) * 100
@@ -442,9 +442,9 @@ def calculate_area_stats(area_name, cameras, date_str):
 
                 if total > 0 and in_cnt > 0:
                     # 计算该摄像头的性别百分比
-                    male_percent = (male / total) * 100
-                    female_percent = (female / total) * 100
-                    unknown_percent = (unknown / total) * 100
+                    male_percent = "{:.1f}".format((male / total) * 100)
+                    female_percent = "{:.1f}".format((female / total) * 100)
+                    unknown_percent = "{:.1f}".format((unknown / total) * 100)
                     minor_percent = (minor / total) * 100
 
                     # 计算该摄像头的性别整数分布
