@@ -82,10 +82,11 @@ def calculate_net_flow_stats(cameras, date_str):
                     gender_data["unknown"] += unknown * in_ratio
                     minor_float += minor * in_ratio
 
-        # 四舍五入并分配余数
-        male_int = round(gender_data["male"])
-        female_int = round(gender_data["female"])
-        unknown_int = round(gender_data["unknown"])
+        # 向下取整并分配余数
+        male_int = int(gender_data["male"])
+        female_int = int(gender_data["female"])
+        unknown_int = int(gender_data["unknown"])
+        # 儿童单独处理（不参与余数分配）
         minor_int = round(minor_float)
 
         allocated = male_int + female_int + unknown_int
@@ -185,10 +186,11 @@ def calculate_individual_stats(camera_name, date_str):
                 unknown_float = unknown * in_ratio
                 minor_float = minor * in_ratio
 
-                # 四舍五入并分配余数
-                male_int = round(male_float)
-                female_int = round(female_float)
-                unknown_int = round(unknown_float)
+                # 向下取整并分配余数
+                male_int = int(male_float)
+                female_int = int(female_float)
+                unknown_int = int(unknown_float)
+                # 儿童单独处理（不参与余数分配）
                 minor_int = round(minor_float)
 
                 allocated = male_int + female_int + unknown_int
@@ -273,7 +275,7 @@ def calculate_individual_stats(camera_name, date_str):
 
 def calculate_cold_storage_stats(date_str):
     """
-    计算冷库区域统计数据
+    计算冷库区域统计数据（使用文档1的方法）
     :param date_str: 日期字符串 (YYYY-MM-DD)
     :return: 包含统计数据的字典
     """
@@ -357,61 +359,71 @@ def calculate_cold_storage_stats(date_str):
         a6_minor_ratio = a6_row[4] / a6_total
         a6_unknown_ratio = a6_row[5] / a6_total
 
-        # 计算冷库区域的性别和儿童数量
-        a7_males = a7_in * a7_male_ratio
-        a7_females = a7_in * a7_female_ratio
-        a7_children = a7_in * a7_minor_ratio
-        a7_unknowns = a7_in * a7_unknown_ratio
-
-        a6_males = a6_out * a6_male_ratio
-        a6_females = a6_out * a6_female_ratio
-        a6_children = a6_out * a6_minor_ratio
-        a6_unknowns = a6_out * a6_unknown_ratio
-
-        # 合并A7和A6的数据
-        total_males = a7_males + a6_males
-        total_females = a7_females + a6_females
-        total_children = a7_children + a6_children
-        total_unknowns = a7_unknowns + a6_unknowns
-
-        # 四舍五入并分配余数
-        male_int = round(total_males)
-        female_int = round(total_females)
-        unknown_int = round(total_unknowns)
-        minor_int = round(total_children)
-
-        allocated = male_int + female_int + unknown_int
-        remainder = stats["total_in"] - allocated
-
-        # 按小数部分分配余数
+        # 计算A7的性别和儿童数量（使用文档1的方法）
+        a7_male_float = a7_in * a7_male_ratio
+        a7_female_float = a7_in * a7_female_ratio
+        a7_minor_float = a7_in * a7_minor_ratio
+        a7_unknown_float = a7_in * a7_unknown_ratio
+        
+        a7_male_int = int(a7_male_float)
+        a7_female_int = int(a7_female_float)
+        a7_unknown_int = int(a7_unknown_float)
+        a7_minor_int = int(a7_minor_float)
+        
+        allocated = a7_male_int + a7_female_int + a7_unknown_int
+        remainder = a7_in - allocated
+        
         fractions = {
-            "male": total_males - male_int,
-            "female": total_females - female_int,
-            "unknown": total_unknowns - unknown_int,
+            "male": a7_male_float - a7_male_int,
+            "female": a7_female_float - a7_female_int,
+            "unknown": a7_unknown_float - a7_unknown_int,
         }
         sorted_fractions = sorted(fractions.items(), key=lambda x: x[1], reverse=True)
-
-        for i in range(abs(remainder)):
+        
+        for i in range(remainder):
             key = sorted_fractions[i % 3][0]
-            if remainder > 0:
-                if key == "male":
-                    male_int += 1
-                elif key == "female":
-                    female_int += 1
-                else:
-                    unknown_int += 1
+            if key == "male":
+                a7_male_int += 1
+            elif key == "female":
+                a7_female_int += 1
             else:
-                if key == "male" and male_int > 0:
-                    male_int -= 1
-                elif key == "female" and female_int > 0:
-                    female_int -= 1
-                elif key == "unknown" and unknown_int > 0:
-                    unknown_int -= 1
+                a7_unknown_int += 1
 
-        stats["total_males"] = male_int
-        stats["total_females"] = female_int
-        stats["total_unknowns"] = unknown_int
-        stats["total_children"] = min(max(0, minor_int), stats["total_in"])
+        # 计算A6的性别和儿童数量（使用文档1的方法）
+        a6_male_float = a6_out * a6_male_ratio
+        a6_female_float = a6_out * a6_female_ratio
+        a6_minor_float = a6_out * a6_minor_ratio
+        a6_unknown_float = a6_out * a6_unknown_ratio
+        
+        a6_male_int = int(a6_male_float)
+        a6_female_int = int(a6_female_float)
+        a6_unknown_int = int(a6_unknown_float)
+        a6_minor_int = int(a6_minor_float)
+        
+        allocated = a6_male_int + a6_female_int + a6_unknown_int
+        remainder = a6_out - allocated
+        
+        fractions = {
+            "male": a6_male_float - a6_male_int,
+            "female": a6_female_float - a6_female_int,
+            "unknown": a6_unknown_float - a6_unknown_int,
+        }
+        sorted_fractions = sorted(fractions.items(), key=lambda x: x[1], reverse=True)
+        
+        for i in range(remainder):
+            key = sorted_fractions[i % 3][0]
+            if key == "male":
+                a6_male_int += 1
+            elif key == "female":
+                a6_female_int += 1
+            else:
+                a6_unknown_int += 1
+
+        # 合并A7和A6的数据
+        stats["total_males"] = a7_male_int + a6_male_int
+        stats["total_females"] = a7_female_int + a6_female_int
+        stats["total_children"] = a7_minor_int + a6_minor_int
+        stats["total_unknowns"] = a7_unknown_int + a6_unknown_int
 
         # 计算最高密度时段（基于进入人数）
         cur.execute(
@@ -468,6 +480,7 @@ def calculate_cold_storage_stats(date_str):
         conn.close()
 
     return stats
+
 
 def calculate_area_stats(area_name, cameras, date_str):
     """
@@ -629,22 +642,27 @@ def generate_pdf_report(stats_data, report_date, output_path):
 
     # 为每个分组生成页面内容
     for group_index, group in enumerate(groups):
-
+        # 添加页面标题
         elements.append(
             Paragraph(
                 f"Analysis Report - Page{group_index + 1}", custom_styles["Title"]
             )
         )
+        
+        # 添加报告日期
         elements.append(
             Paragraph(f"Date of Report: {report_date}", custom_styles["Subtitle"])
         )
+        
+        # 添加垂直间隔
         elements.append(Spacer(1, 24))
 
         # 处理分组内的每个区域
         for area_index, area in enumerate(group):
+            # 添加区域名称标题
             elements.append(Paragraph(area["name"], custom_styles["SectionHeader"]))
-
-            # 创建数据表格（使用新格式）
+            
+            # 创建数据表格
             data = [
                 ["Metric", "Value"],
                 ["IN", area["total_in"]],
@@ -687,7 +705,6 @@ def generate_pdf_report(stats_data, report_date, output_path):
     # 生成PDF
     doc.build(elements)
     print(f"PDF report generated at: {output_path}")
-
 
 def main():
     # 计算前一天的日期
