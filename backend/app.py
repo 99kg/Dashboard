@@ -16,7 +16,15 @@ from datetime import date, timedelta
 import hashlib
 import secrets
 from config import DATABASE_CONFIG
-from common import get_db_connection, get_gender_count, get_camera_stats, calculate_percentage_change, get_peak_and_low_periods, get_total_visitors, get_reference_visitors
+from common import (
+    get_db_connection,
+    get_gender_count,
+    get_camera_stats,
+    calculate_percentage_change,
+    get_peak_and_low_periods,
+    get_total_visitors,
+    get_reference_visitors,
+)
 
 # 加载环境变量
 load_dotenv()
@@ -33,6 +41,7 @@ app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(32))
 
 # 数据库配置
 DB_CONFIG = DATABASE_CONFIG
+
 
 # 登录保护装饰器
 def login_required(f):
@@ -193,37 +202,6 @@ def update_last_login():
         conn.close()
 
 
-# @app.route('/api/cameras', methods=['GET'])
-# @login_required
-# def get_cameras():
-#     conn = get_db_connection()
-#     cur = conn.cursor()
-#     try:
-#         cur.execute("SELECT DISTINCT camera_name FROM video_analysis ORDER BY camera_name")
-#         cameras = [row[0] for row in cur.fetchall()]
-#         return jsonify(cameras)
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
-#     finally:
-#         cur.close()
-#         conn.close()
-
-# @app.route('/api/last_run_date', methods=['GET'])
-# @login_required
-# def get_last_run_date():
-#     conn = get_db_connection()
-#     cur = conn.cursor()
-#     try:
-#         cur.execute("SELECT MAX(run_date) FROM run_records")
-#         last_run_date = cur.fetchone()[0]
-#         return jsonify({"last_run_date": last_run_date.strftime("%Y-%m-%d") if last_run_date else None})
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
-#     finally:
-#         cur.close()
-#         conn.close()
-
-
 @app.route("/api/alltime", methods=["GET"])
 @login_required
 def get_all_time():
@@ -281,8 +259,12 @@ def get_dashboard_data():
 
     try:
         # Part 1: Total visitors and comparison
-        total_visitors_in, total_visitors_out = get_total_visitors(conn, date_start, date_end)
-        reference_visitors_in = get_reference_visitors(conn, ref_date_start, ref_date_end)
+        total_visitors_in, total_visitors_out = get_total_visitors(
+            conn, date_start, date_end
+        )
+        reference_visitors_in = get_reference_visitors(
+            conn, ref_date_start, ref_date_end
+        )
 
         # 确保流量不为负数
         if total_visitors_in < 0:
@@ -291,7 +273,9 @@ def get_dashboard_data():
         if reference_visitors_in < 0:
             reference_visitors_in = 0
 
-        total_percent_change = calculate_percentage_change(total_visitors_in, reference_visitors_in)
+        total_percent_change = calculate_percentage_change(
+            total_visitors_in, reference_visitors_in
+        )
 
         # Part 2: Peak and Low periods(by in_count)
         peak_period, low_period = get_peak_and_low_periods(conn, date_start, date_end)
@@ -305,12 +289,23 @@ def get_dashboard_data():
         # Part 7: Cold Storage (A7 and A6, 专用方法)
         cold_storage_a7_stats = get_camera_stats(conn, "A7", date_start, date_end)
         cold_storage_a6_stats = get_camera_stats(conn, "A6", date_start, date_end)
-        cold_storage_in = cold_storage_a7_stats["total_in"] + cold_storage_a6_stats["total_out"]
-        cold_storage_out = cold_storage_a7_stats["total_out"] + cold_storage_a6_stats["total_in"]
-        
-        cold_storage_a7_ref_stats = get_camera_stats(conn, "A7", ref_date_start, ref_date_end)
-        cold_storage_a6_ref_stats = get_camera_stats(conn, "A6", ref_date_start, ref_date_end)
-        cold_storage_ref_in = cold_storage_a7_ref_stats["total_in"] + cold_storage_a6_ref_stats["total_out"]
+        cold_storage_in = (
+            cold_storage_a7_stats["total_in"] + cold_storage_a6_stats["total_out"]
+        )
+        cold_storage_out = (
+            cold_storage_a7_stats["total_out"] + cold_storage_a6_stats["total_in"]
+        )
+
+        cold_storage_a7_ref_stats = get_camera_stats(
+            conn, "A7", ref_date_start, ref_date_end
+        )
+        cold_storage_a6_ref_stats = get_camera_stats(
+            conn, "A6", ref_date_start, ref_date_end
+        )
+        cold_storage_ref_in = (
+            cold_storage_a7_ref_stats["total_in"]
+            + cold_storage_a6_ref_stats["total_out"]
+        )
 
         # 确保流量不为负数
         if cold_storage_in < 0:
@@ -319,25 +314,39 @@ def get_dashboard_data():
         if cold_storage_ref_in < 0:
             cold_storage_ref_in = 0
 
-        cold_storage_percent = calculate_percentage_change(cold_storage_in, cold_storage_ref_in)
+        cold_storage_percent = calculate_percentage_change(
+            cold_storage_in, cold_storage_ref_in
+        )
 
         if cold_storage_in == 0:
             cold_storage_gender = {"male": 0, "female": 0, "unknown": 0}
         else:
-            cold_storage_a7_gender = get_gender_count(cold_storage_a7_stats["total_in"], cold_storage_a7_stats["male_percent"], cold_storage_a7_stats["female_percent"], cold_storage_a7_stats["unknown_percent"])
-            cold_storage_a6_gender = get_gender_count(cold_storage_a6_stats["total_out"], cold_storage_a6_stats["male_percent"], cold_storage_a6_stats["female_percent"], cold_storage_a6_stats["unknown_percent"])
+            cold_storage_a7_gender = get_gender_count(
+                cold_storage_a7_stats["total_in"],
+                cold_storage_a7_stats["male_percent"],
+                cold_storage_a7_stats["female_percent"],
+                cold_storage_a7_stats["unknown_percent"],
+            )
+            cold_storage_a6_gender = get_gender_count(
+                cold_storage_a6_stats["total_out"],
+                cold_storage_a6_stats["male_percent"],
+                cold_storage_a6_stats["female_percent"],
+                cold_storage_a6_stats["unknown_percent"],
+            )
 
             cold_storage_gender = {
                 "male": cold_storage_a7_gender["male"] + cold_storage_a6_gender["male"],
-                "female": cold_storage_a7_gender["female"] + cold_storage_a6_gender["female"],
-                "unknown": cold_storage_a7_gender["unknown"] + cold_storage_a6_gender["unknown"]
+                "female": cold_storage_a7_gender["female"]
+                + cold_storage_a6_gender["female"],
+                "unknown": cold_storage_a7_gender["unknown"]
+                + cold_storage_a6_gender["unknown"],
             }
 
         # part 8:A8
         a8_stats = get_camera_stats(conn, "A8", date_start, date_end)
         a8_value_in = a8_stats["total_in"]
         a8_value_out = a8_stats["total_out"]
-        
+
         a8_ref_stats = get_camera_stats(conn, "A8", ref_date_start, ref_date_end)
         a8_ref_in = a8_ref_stats["total_in"]
 
@@ -356,19 +365,36 @@ def get_dashboard_data():
             a8_male_percent = a8_stats["male_percent"]
             a8_female_percent = a8_stats["female_percent"]
             a8_unknown_percent = a8_stats["unknown_percent"]
-            a8_gender = get_gender_count(a8_value_in, a8_male_percent, a8_female_percent, a8_unknown_percent)
+            a8_gender = get_gender_count(
+                a8_value_in, a8_male_percent, a8_female_percent, a8_unknown_percent
+            )
 
         # Part 10: 2nd Floor (A2, A3, A1, A6)
         a1_stats = get_camera_stats(conn, "A1", date_start, date_end)
-        second_floor_in = a1_stats["total_in"] + a2_stats["total_in"] + a3_stats["total_in"] + a6_stats["total_in"]
-        second_floor_out = a1_stats["total_out"] + a2_stats["total_out"] + a3_stats["total_out"] + a6_stats["total_out"]
-        
+        second_floor_in = (
+            a1_stats["total_in"]
+            + a2_stats["total_in"]
+            + a3_stats["total_in"]
+            + a6_stats["total_in"]
+        )
+        second_floor_out = (
+            a1_stats["total_out"]
+            + a2_stats["total_out"]
+            + a3_stats["total_out"]
+            + a6_stats["total_out"]
+        )
+
         a1_ref_stats = get_camera_stats(conn, "A1", ref_date_start, ref_date_end)
         a2_ref_stats = get_camera_stats(conn, "A2", ref_date_start, ref_date_end)
         a3_ref_stats = get_camera_stats(conn, "A3", ref_date_start, ref_date_end)
         a6_ref_stats = get_camera_stats(conn, "A6", ref_date_start, ref_date_end)
 
-        second_floor_ref_in = a1_ref_stats["total_in"] + a2_ref_stats["total_in"] + a3_ref_stats["total_in"] + a6_ref_stats["total_in"]
+        second_floor_ref_in = (
+            a1_ref_stats["total_in"]
+            + a2_ref_stats["total_in"]
+            + a3_ref_stats["total_in"]
+            + a6_ref_stats["total_in"]
+        )
 
         # 确保流量不为负数
         if second_floor_in < 0:
@@ -377,27 +403,58 @@ def get_dashboard_data():
         if second_floor_ref_in < 0:
             second_floor_ref_in = 0
 
-        second_floor_percent = calculate_percentage_change(second_floor_in, second_floor_ref_in)
+        second_floor_percent = calculate_percentage_change(
+            second_floor_in, second_floor_ref_in
+        )
 
         if second_floor_in == 0:
             second_floor_gender = {"male": 0, "female": 0, "unknown": 0}
         else:
-            a1_gender = get_gender_count(a1_stats["total_in"], a1_stats["male_percent"], a1_stats["female_percent"], a1_stats["unknown_percent"])
-            a2_gender = get_gender_count(a2_stats["total_in"], a2_stats["male_percent"], a2_stats["female_percent"], a2_stats["unknown_percent"])
-            a3_gender = get_gender_count(a3_stats["total_in"], a3_stats["male_percent"], a3_stats["female_percent"], a3_stats["unknown_percent"])
-            a6_gender = get_gender_count(a6_stats["total_in"], a6_stats["male_percent"], a6_stats["female_percent"], a6_stats["unknown_percent"])
+            a1_gender = get_gender_count(
+                a1_stats["total_in"],
+                a1_stats["male_percent"],
+                a1_stats["female_percent"],
+                a1_stats["unknown_percent"],
+            )
+            a2_gender = get_gender_count(
+                a2_stats["total_in"],
+                a2_stats["male_percent"],
+                a2_stats["female_percent"],
+                a2_stats["unknown_percent"],
+            )
+            a3_gender = get_gender_count(
+                a3_stats["total_in"],
+                a3_stats["male_percent"],
+                a3_stats["female_percent"],
+                a3_stats["unknown_percent"],
+            )
+            a6_gender = get_gender_count(
+                a6_stats["total_in"],
+                a6_stats["male_percent"],
+                a6_stats["female_percent"],
+                a6_stats["unknown_percent"],
+            )
 
             second_floor_gender = {
-                "male": a1_gender["male"] + a2_gender["male"] + a3_gender["male"] + a6_gender["male"],
-                "female": a1_gender["female"] + a2_gender["female"] + a3_gender["female"] + a6_gender["female"],
-                "unknown": a1_gender["unknown"] + a2_gender["unknown"] + a3_gender["unknown"] + a6_gender["unknown"]
+                "male": a1_gender["male"]
+                + a2_gender["male"]
+                + a3_gender["male"]
+                + a6_gender["male"],
+                "female": a1_gender["female"]
+                + a2_gender["female"]
+                + a3_gender["female"]
+                + a6_gender["female"],
+                "unknown": a1_gender["unknown"]
+                + a2_gender["unknown"]
+                + a3_gender["unknown"]
+                + a6_gender["unknown"],
             }
 
         # Part 9: Canteen (A4 and A5)
         a5_stats = get_camera_stats(conn, "A5", date_start, date_end)
         canteen_value_in = a4_stats["total_in"] + a5_stats["total_in"]
         canteen_value_out = a4_stats["total_out"] + a5_stats["total_out"]
-        
+
         a4_ref_stats = get_camera_stats(conn, "A4", ref_date_start, ref_date_end)
         a5_ref_stats = get_camera_stats(conn, "A5", ref_date_start, ref_date_end)
 
@@ -412,22 +469,34 @@ def get_dashboard_data():
         # 确保canteen区域人数不超过2nd Floor区域人数，防止数据错误
         if canteen_value_in > second_floor_in:
             canteen_value_in = second_floor_in
-        
+
         if canteen_value_ref_in > second_floor_ref_in:
             canteen_value_ref_in = second_floor_ref_in
 
-        canteen_percent = calculate_percentage_change(canteen_value_in, canteen_value_ref_in)
+        canteen_percent = calculate_percentage_change(
+            canteen_value_in, canteen_value_ref_in
+        )
 
         if canteen_value_in == 0:
             canteen_gender = {"male": 0, "female": 0, "unknown": 0}
         else:
-            a4_gender = get_gender_count(a4_stats["total_in"], a4_stats["male_percent"], a4_stats["female_percent"], a4_stats["unknown_percent"])
-            a5_gender = get_gender_count(a5_stats["total_in"], a5_stats["male_percent"], a5_stats["female_percent"], a5_stats["unknown_percent"])
-            
+            a4_gender = get_gender_count(
+                a4_stats["total_in"],
+                a4_stats["male_percent"],
+                a4_stats["female_percent"],
+                a4_stats["unknown_percent"],
+            )
+            a5_gender = get_gender_count(
+                a5_stats["total_in"],
+                a5_stats["male_percent"],
+                a5_stats["female_percent"],
+                a5_stats["unknown_percent"],
+            )
+
             canteen_gender = {
                 "male": a4_gender["male"] + a5_gender["male"],
                 "female": a4_gender["female"] + a5_gender["female"],
-                "unknown": a4_gender["unknown"] + a5_gender["unknown"]
+                "unknown": a4_gender["unknown"] + a5_gender["unknown"],
             }
 
         # Part 11: Gender breakdown
@@ -452,7 +521,12 @@ def get_dashboard_data():
             total_female_percent = total_stats["female_percent"]
             total_unknown_percent = total_stats["unknown_percent"]
             total_minor_percent = total_stats["minor_percent"]
-            total_gender = get_gender_count(total_value_in, total_male_percent, total_female_percent, total_unknown_percent)
+            total_gender = get_gender_count(
+                total_value_in,
+                total_male_percent,
+                total_female_percent,
+                total_unknown_percent,
+            )
             # 计算儿童流量
             total_minor_in = int(float(total_minor_percent) / 100.0 * total_value_in)
 
@@ -464,17 +538,32 @@ def get_dashboard_data():
             total_ref_female_percent = total_ref_stats["female_percent"]
             total_ref_unknown_percent = total_ref_stats["unknown_percent"]
             total_ref_minor_percent = total_ref_stats["minor_percent"]
-            total_ref_gender = get_gender_count(total_ref_value_in, total_ref_male_percent, total_ref_female_percent, total_ref_unknown_percent)
+            total_ref_gender = get_gender_count(
+                total_ref_value_in,
+                total_ref_male_percent,
+                total_ref_female_percent,
+                total_ref_unknown_percent,
+            )
             # 计算儿童流量
-            total_ref_minor_in = int(float(total_ref_minor_percent) / 100.0 * total_ref_value_in)
+            total_ref_minor_in = int(
+                float(total_ref_minor_percent) / 100.0 * total_ref_value_in
+            )
 
         # 计算百分比变化
-        male_percent_change = calculate_percentage_change(total_gender["male"], total_ref_gender["male"])
-        female_percent_change = calculate_percentage_change(total_gender["female"], total_ref_gender["female"])
-        unknown_percent_change = calculate_percentage_change(total_gender["unknown"], total_ref_gender["unknown"])
-        
+        male_percent_change = calculate_percentage_change(
+            total_gender["male"], total_ref_gender["male"]
+        )
+        female_percent_change = calculate_percentage_change(
+            total_gender["female"], total_ref_gender["female"]
+        )
+        unknown_percent_change = calculate_percentage_change(
+            total_gender["unknown"], total_ref_gender["unknown"]
+        )
+
         # 单独计算儿童百分比变化
-        minor_percent_change = calculate_percentage_change(total_minor_in, total_ref_minor_in)
+        minor_percent_change = calculate_percentage_change(
+            total_minor_in, total_ref_minor_in
+        )
 
         # 返回结果
         return jsonify(
@@ -555,6 +644,7 @@ def get_dashboard_data():
     finally:
         cur.close()
         conn.close()
+
 
 @app.route("/api/footfall-distribution", methods=["GET"])
 @login_required

@@ -4,11 +4,15 @@ from config import DATABASE_CONFIG
 # 数据库配置
 DB_CONFIG = DATABASE_CONFIG
 
+
 def get_db_connection():
     """创建并返回数据库连接"""
     return psycopg2.connect(**DB_CONFIG)
 
-def get_gender_count(total_count, male_percent_str, female_percent_str, unknown_percent_str):
+
+def get_gender_count(
+    total_count, male_percent_str, female_percent_str, unknown_percent_str
+):
     """
     按比例计算整数性别分布
     :param total_count: 总人数
@@ -40,7 +44,7 @@ def get_gender_count(total_count, male_percent_str, female_percent_str, unknown_
     floats = {
         "male": male_float - male_int,
         "female": female_float - female_int,
-        "unknown": unknown_float - unknown_int
+        "unknown": unknown_float - unknown_int,
     }
 
     # 分配剩余人数（按照小数部分大小降序分配）
@@ -58,11 +62,8 @@ def get_gender_count(total_count, male_percent_str, female_percent_str, unknown_
         floats[max_key] = 0
 
     # 返回字典格式
-    return {
-        "male": male_int,
-        "female": female_int,
-        "unknown": unknown_int
-    }
+    return {"male": male_int, "female": female_int, "unknown": unknown_int}
+
 
 def get_camera_stats(conn, cam_name, date_start, date_end):
     """
@@ -74,7 +75,7 @@ def get_camera_stats(conn, cam_name, date_start, date_end):
     :return: 包含统计数据的字典
     """
     cur = conn.cursor()
-    
+
     try:
         if cam_name is None:
             # 获取整体基本统计数据
@@ -186,6 +187,7 @@ def get_camera_stats(conn, cam_name, date_start, date_end):
     finally:
         cur.close()
 
+
 def calculate_percentage_change(current, previous):
     """
     计算百分比变化
@@ -197,6 +199,7 @@ def calculate_percentage_change(current, previous):
         return 0
     return "{:.1f}".format(((current - previous) / previous) * 100, 1)
 
+
 def get_peak_and_low_periods(conn, date_start, date_end):
     """
     获取指定日期范围内的最高和最低人流时段
@@ -206,7 +209,7 @@ def get_peak_and_low_periods(conn, date_start, date_end):
     :return: (高峰时段, 低峰时段)
     """
     cur = conn.cursor()
-    
+
     try:
         # 获取高峰时段
         cur.execute(
@@ -241,10 +244,11 @@ def get_peak_and_low_periods(conn, date_start, date_end):
         )
         low_row = cur.fetchone()
         low_period = low_row[0] + ", " + low_row[1] if low_row else "N/A"
-        
+
         return peak_period, low_period
     finally:
         cur.close()
+
 
 def get_total_visitors(conn, date_start, date_end):
     """
@@ -255,7 +259,7 @@ def get_total_visitors(conn, date_start, date_end):
     :return: (进入人数, 离开人数)
     """
     cur = conn.cursor()
-    
+
     try:
         cur.execute(
             """
@@ -270,6 +274,7 @@ def get_total_visitors(conn, date_start, date_end):
     finally:
         cur.close()
 
+
 def get_reference_visitors(conn, date_start, date_end):
     """
     获取参考时间段的访客数
@@ -279,7 +284,7 @@ def get_reference_visitors(conn, date_start, date_end):
     :return: 进入人数
     """
     cur = conn.cursor()
-    
+
     try:
         cur.execute(
             """
@@ -293,6 +298,7 @@ def get_reference_visitors(conn, date_start, date_end):
     finally:
         cur.close()
 
+
 def get_cold_storage_peak_and_low_periods(conn, date_start, date_end):
     """
     获取冷库区域的最高和最低密度时段（基于A7进+A6出）
@@ -302,7 +308,7 @@ def get_cold_storage_peak_and_low_periods(conn, date_start, date_end):
     :return: (高峰时段, 低峰时段)
     """
     cur = conn.cursor()
-    
+
     try:
         # 计算最高密度时段（基于进入人数，即A7.in_count + A6.out_count）
         cur.execute(
@@ -353,10 +359,11 @@ def get_cold_storage_peak_and_low_periods(conn, date_start, date_end):
             low_period = f"{low_row[0]}, {int(low_row[1])} pax"
         else:
             low_period = "N/A"
-        
+
         return peak_period, low_period
     finally:
         cur.close()
+
 
 def get_area_peak_and_low_periods(conn, cameras, date_start, date_end):
     """
@@ -368,7 +375,7 @@ def get_area_peak_and_low_periods(conn, cameras, date_start, date_end):
     :return: (高峰时段, 低峰时段)
     """
     cur = conn.cursor()
-    
+
     try:
         # 计算最高密度时段（基于区域内所有摄像头的进入人数之和）
         placeholders = ",".join(["%s"] * len(cameras))
@@ -413,7 +420,7 @@ def get_area_peak_and_low_periods(conn, cameras, date_start, date_end):
             low_period = f"{low_row[0]}, {int(low_row[1])} pax"
         else:
             low_period = "N/A"
-        
+
         return peak_period, low_period
     finally:
         cur.close()

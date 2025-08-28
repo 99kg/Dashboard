@@ -13,10 +13,17 @@ from reportlab.platypus import (
     PageBreak,
 )
 from config import DATABASE_CONFIG
-from common import get_db_connection, get_gender_count, get_camera_stats, get_area_peak_and_low_periods, get_cold_storage_peak_and_low_periods
+from common import (
+    get_db_connection,
+    get_gender_count,
+    get_camera_stats,
+    get_area_peak_and_low_periods,
+    get_cold_storage_peak_and_low_periods,
+)
 
 # 数据库配置
 DB_CONFIG = DATABASE_CONFIG
+
 
 def calculate_individual_stats(camera_name, date_str):
     """
@@ -28,15 +35,15 @@ def calculate_individual_stats(camera_name, date_str):
     conn = get_db_connection()
     start_time = f"{date_str} 00:00:00"
     end_time = f"{date_str} 23:59:59"
-    
+
     try:
         # 使用共通函数获取摄像头统计数据
         stats = get_camera_stats(conn, camera_name, start_time, end_time)
         stats["name"] = f"Camera {camera_name}"
-        
+
         # 重新组织数据结构以匹配PDF报告的格式
         total_in = stats["total_in"]
-        
+
         # 计算性别分布（基于进入人数）
         if total_in > 0:
             # 使用get_gender_count函数计算整数性别分布
@@ -58,11 +65,11 @@ def calculate_individual_stats(camera_name, date_str):
             stats["total_females"] = 0
             stats["total_unknowns"] = 0
             stats["total_children"] = 0
-            
+
         # 使用峰值和低谷时段数据
         stats["highest_period"] = stats["peak_period"]
         stats["lowest_period"] = stats["low_period"]
-        
+
         # 移除不需要的字段
         stats.pop("peak_period", None)
         stats.pop("low_period", None)
@@ -70,7 +77,7 @@ def calculate_individual_stats(camera_name, date_str):
         stats.pop("female_percent", None)
         stats.pop("unknown_percent", None)
         stats.pop("minor_percent", None)
-            
+
     except Exception as e:
         print(f"Error calculating stats for {camera_name}: {e}")
         # 返回默认统计数据
@@ -89,6 +96,7 @@ def calculate_individual_stats(camera_name, date_str):
         conn.close()
 
     return stats
+
 
 def calculate_cold_storage_stats(date_str):
     """
@@ -111,7 +119,7 @@ def calculate_cold_storage_stats(date_str):
         a7_out = a7_stats["total_out"]
         a6_in = a6_stats["total_in"]
         a6_out = a6_stats["total_out"]
-        
+
         cold_storage_in = a7_in + a6_out  # 进入冷库：A7进入 + A6离开
         cold_storage_out = a7_out + a6_in  # 离开冷库：A7离开 + A6进入
 
@@ -156,7 +164,9 @@ def calculate_cold_storage_stats(date_str):
         total_children = a7_children + a6_children
 
         # 计算最高/最低密度时段（基于进入人数，即A7.in_count + A6.out_count）
-        peak_period, low_period = get_cold_storage_peak_and_low_periods(conn, start_time, end_time)
+        peak_period, low_period = get_cold_storage_peak_and_low_periods(
+            conn, start_time, end_time
+        )
 
         stats = {
             "name": "Cold Storage",
@@ -189,6 +199,7 @@ def calculate_cold_storage_stats(date_str):
 
     return stats
 
+
 def calculate_area_stats(area_name, cameras, date_str):
     """
     计算指定区域的统计数据（调整为累加各摄像头，并统一计算性别）
@@ -213,7 +224,7 @@ def calculate_area_stats(area_name, cameras, date_str):
         # 遍历每个摄像头
         for cam in cameras:
             cam_stats = get_camera_stats(conn, cam, start_time, end_time)
-            
+
             in_cnt = cam_stats["total_in"]
             out_cnt = cam_stats["total_out"]
             total_in += in_cnt
@@ -237,7 +248,9 @@ def calculate_area_stats(area_name, cameras, date_str):
                 total_children += cam_children
 
         # 计算最高/最低密度时段
-        peak_period, low_period = get_area_peak_and_low_periods(conn, cameras, start_time, end_time)
+        peak_period, low_period = get_area_peak_and_low_periods(
+            conn, cameras, start_time, end_time
+        )
 
         stats = {
             "name": area_name,
@@ -269,6 +282,7 @@ def calculate_area_stats(area_name, cameras, date_str):
         conn.close()
 
     return stats
+
 
 def generate_pdf_report(stats_data, report_date, output_path):
     """
@@ -427,6 +441,7 @@ def generate_pdf_report(stats_data, report_date, output_path):
     doc.build(elements)
     print(f"PDF report generated at: {output_path}")
 
+
 def main():
     # 计算前一天的日期
     yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
@@ -459,6 +474,7 @@ def main():
     output_path = os.path.join(output_dir, f"Date of Report({yesterday}).pdf")
 
     generate_pdf_report(stats_data, yesterday, output_path)
+
 
 if __name__ == "__main__":
     main()
