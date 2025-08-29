@@ -1,14 +1,10 @@
-// 检查登录状态并更新用户信息
 function checkLoginStatus() {
     fetch('/api/check-session')
         .then(response => response.json())
         .then(data => {
             if (data.authenticated) {
-                // 显示用户名和最后登录时间
                 document.getElementById('usernameDisplay').textContent = data.username;
                 document.getElementById('lastLoginDisplay').textContent = data.last_login;
-
-                // 更新登出按钮区域的用户名显示
                 const welcomeSpan = document.querySelector('.logout-content span');
                 if (welcomeSpan) {
                     welcomeSpan.textContent = `Welcome, ${data.username}`;
@@ -18,8 +14,6 @@ function checkLoginStatus() {
             }
         });
 }
-
-// 更新用户最后登录时间
 function updateLastLoginTime() {
     fetch('/api/update-last-login', {
         method: 'POST',
@@ -30,103 +24,69 @@ function updateLastLoginTime() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // 最后登录时间已更新!
                 console.log('Last login time updated successfully!');
             }
         })
         .catch(error => {
-            // 更新最后登录时间时出错
             console.error('Error occurred while updating last login time:', error);
         });
 }
-
 document.addEventListener('DOMContentLoaded', function () {
-
-    // 首先更新登录时间
     updateLastLoginTime();
-
-    // 然后检查登录状态
     checkLoginStatus();
-
-    // 登出功能 - 使用静态HTML中的按钮
     document.getElementById('logoutBtn').addEventListener('click', function () {
         fetch('/logout').then(() => {
             window.location.href = '/login';
         });
     });
-
-    // 获取DOM元素
     const startTimeInput = document.getElementById('startTimeInput');
     const endTimeInput = document.getElementById('endTimeInput');
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
     const refStartDateInput = document.getElementById('refStartDate');
     const refEndDateInput = document.getElementById('refEndDate');
-
-    // 检查并修正日期
     function validateDateInputs() {
-        // 检查 Start Date 是否晚于 End Date 
         if (startDateInput.value > endDateInput.value) {
             endDateInput.value = startDateInput.value;
         }
-
-        // 检查 Compare Start Date 是否晚于 Compare End Date
         if (refStartDateInput.value > refEndDateInput.value) {
             refEndDateInput.value = refStartDateInput.value;
             refStartDateInput.value = refEndDateInput.value;
         }
-
-        // 检查 End Date 是否早于 Start Date
         if (endDateInput.value < startDateInput.value) {
-            endDateInput.value = startDateInput.value; // 强制设置为 Start Date
+            endDateInput.value = startDateInput.value; 
         }
-
-        // 检查 Compare End Date 是否早于 Compare Start Date
         if (refEndDateInput.value < refStartDateInput.value) {
-            refEndDateInput.value = refStartDateInput.value; // 强制设置为 Compare Start Date
+            refEndDateInput.value = refStartDateInput.value; 
         }
     }
-
-    // 添加事件监听器
     endDateInput.addEventListener('change', validateDateInputs);
     refEndDateInput.addEventListener('change', validateDateInputs);
-
-    // 设置默认日期（昨天和前天）
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-
     const twoDaysAgo = new Date(today);
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 8);
-
-    // 格式化日期为YYYY-MM-DD
     function formatDate(date) {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     }
-
-    // 设置默认日期
     const defaultStartDate = formatDate(yesterday);
     const defaultEndDate = formatDate(yesterday);
     const defaultRefStartDate = formatDate(twoDaysAgo);
     const defaultRefEndDate = formatDate(twoDaysAgo);
-
     startDateInput.value = defaultStartDate;
     endDateInput.value = defaultEndDate;
     refStartDateInput.value = defaultRefStartDate;
     refEndDateInput.value = defaultRefEndDate;
-
-    // 更新状态指示器
     function updateStatusIndicator(elementId, isActive) {
         const indicator = document.querySelector(`#${elementId} .status-indicator`);
         if (indicator) {
             indicator.classList.toggle('status-active', isActive);
         }
     }
-
-    // 显示加载状态
     function showLoading(elementId) {
         const element = document.getElementById(elementId);
         if (element) {
@@ -138,8 +98,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         updateStatusIndicator(elementId, false);
     }
-
-    // 恢复内容显示
     function hideLoading(elementId) {
         updateStatusIndicator(elementId, true);
         const element = document.getElementById(elementId);
@@ -150,31 +108,23 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     }
-
-    // 从后端获取时间段列表
     function fetchAllTime(dateStart, dateEnd) {
         return fetch(`/api/alltime?date_start=${dateStart}&date_end=${dateEnd}`)
             .then(response => {
                 if (!response.ok) {
-                    // 网络响应异常
                     throw new Error('Network response exception!');
                 }
                 return response.json();
             })
             .catch(error => {
-                // 获取时间段时出错
                 console.error('Error occurred while fetching time periods:', error);
                 throw error;
             });
     }
-
-    // 获取仪表板数据
     function fetchDashboardData(params) {
-        // 显示所有部分的加载状态
         for (let i = 1; i <= 11; i++) {
             showLoading(`part${i}`);
         }
-
         return fetch('/api/dashboard', {
             method: 'POST',
             headers: {
@@ -184,24 +134,17 @@ document.addEventListener('DOMContentLoaded', function () {
         })
             .then(response => {
                 if (!response.ok) {
-                    // 网络响应异常
                     throw new Error('Network response exception!');
                 }
                 return response.json();
             })
             .catch(error => {
-                // 获取仪表板数据时出错
                 console.error('Error occurred while fetching dashboard data:', error);
                 throw error;
             });
     }
-
-    // 显示结果
     function displayResults(data) {
-
         window.dashboardData = data;
-
-        // part1：总访问量
         if (data.part1) {
             document.getElementById('part1-total-in').textContent = data.part1.total_in || '-';
             document.getElementById('part1-total-out').textContent = data.part1.total_out || '-';
@@ -211,7 +154,6 @@ document.addEventListener('DOMContentLoaded', function () {
             part1Change.className = data.part1.percent_change >= 0 ?
                 'result-value percent-positive' :
                 'result-value percent-negative';
-
             if (data.part1.percent_change > 0) {
                 $('.compare_up').show();
                 $('.compare_up').css('visibility', 'visible');
@@ -225,32 +167,23 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 part1Change.textContent = '\u00A0\u00A00%';
                 $('#part1-change').css('color', '#7e797bff');
-                $('.compare_up').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
+                $('.compare_up').css('visibility', 'hidden'); 
             }
-
             hideLoading('part1');
         }
-
-        // part2：高峰与低谷时段
         if (data.part2) {
             document.getElementById('part2-peak').textContent = data.part2.peak_period || '-';
             document.getElementById('part2-low').textContent = data.part2.low_period || '-';
             hideLoading('part2');
         }
-
-        // 填充摄像头统计数据
         if (data.part3) fillCameraStats('part3', data.part3);
         if (data.part4) fillCameraStats('part4', data.part4);
         if (data.part5) fillCameraStats('part5', data.part5);
         if (data.part6) fillCameraStats('part6', data.part6);
-
-        // 填充区域统计数据
         if (data.part7) fillAreaStats('part7', data.part7);
         if (data.part8) fillAreaStats('part8', data.part8);
         if (data.part9) fillAreaStats('part9', data.part9);
         if (data.part10) fillAreaStats('part10', data.part10);
-
-        // part11：性别分布
         if (data.part11) {
             document.getElementById('part11-male').textContent = data.part11.male.current || '-';
             const maleChange = document.getElementById('part11-male-change');
@@ -268,9 +201,8 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 maleChange.textContent = '0%';
                 $('#part11-male-change').css('color', '#7e797bff');
-                $('.value_up1').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
+                $('.value_up1').css('visibility', 'hidden'); 
             }
-
             document.getElementById('part11-female').textContent = data.part11.female.current || '-';
             const femaleChange = document.getElementById('part11-female-change');
             femaleChange.textContent = data.part11.female.percent_change ? `${data.part11.female.percent_change}%` : '-';
@@ -287,9 +219,8 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 femaleChange.textContent = '0%';
                 $('#part11-female-change').css('color', '#7e797bff');
-                $('.value_up2').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
+                $('.value_up2').css('visibility', 'hidden'); 
             }
-
             document.getElementById('part11-children').textContent = data.part11.children.current || '-';
             const childrenChange = document.getElementById('part11-children-change');
             childrenChange.textContent = data.part11.children.percent_change ? `${data.part11.children.percent_change}%` : '-';
@@ -306,9 +237,8 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 childrenChange.textContent = '0%';
                 $('#part11-children-change').css('color', '#7e797bff');
-                $('.value_up3').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
+                $('.value_up3').css('visibility', 'hidden'); 
             }
-
             document.getElementById('part11-unknown').textContent = data.part11.unknown.current || '-';
             const unknownChange = document.getElementById('part11-unknown-change');
             unknownChange.textContent = data.part11.unknown.percent_change ? `${data.part11.unknown.percent_change}%` : '-';
@@ -325,14 +255,11 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 unknownChange.textContent = '0%';
                 $('#part11-unknown-change').css('color', '#7e797bff');
-                $('.value_up4').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
+                $('.value_up4').css('visibility', 'hidden'); 
             }
-
             hideLoading('part11');
         }
-
     }
-
     function fillCameraStats(partId, stats) {
         document.getElementById(`${partId}-total-in`).textContent = stats.total_in || '-';
         document.getElementById(`${partId}-total-out`).textContent = stats.total_out || '-';
@@ -344,7 +271,6 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById(`${partId}-low`).textContent = stats.low_period || '-';
         hideLoading(partId);
     }
-
     function fillAreaStats(partId, stats) {
         document.getElementById(`${partId}-value-in`).textContent = stats.value_in || '0';
         document.getElementById(`${partId}-value-out`).textContent = stats.value_out || '0';
@@ -354,7 +280,6 @@ document.addEventListener('DOMContentLoaded', function () {
         changeElement.className = stats.percent_change >= 0 ?
             'result-value percent-positive' :
             'result-value percent-negative';
-
         if (stats.percent_change > 0) {
             if (partId === 'part7') {
                 $('.comparison_up1').show();
@@ -403,19 +328,18 @@ document.addEventListener('DOMContentLoaded', function () {
             changeElement.textContent = '\u00A0\u00A00%';
             if (partId === 'part7') {
                 $('#part7-change').css('color', '#7e797bff');
-                $('.comparison_up1').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
+                $('.comparison_up1').css('visibility', 'hidden'); 
             } else if (partId === 'part8') {
                 $('#part8-change').css('color', '#7e797bff');
-                $('.comparison_up2').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
+                $('.comparison_up2').css('visibility', 'hidden'); 
             } else if (partId === 'part9') {
                 $('#part9-change').css('color', '#7e797bff');
-                $('.comparison_up3').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
+                $('.comparison_up3').css('visibility', 'hidden'); 
             } else {
                 $('#part10-change').css('color', '#7e797bff');
-                $('.comparison_up4').css('visibility', 'hidden'); // 使用 visibility 隐藏但保留占位
+                $('.comparison_up4').css('visibility', 'hidden'); 
             }
         }
-
         var arr = [
             { "product_name_en": "Male", "count_pauchase": stats.male },
             { "product_name_en": "Female", "count_pauchase": stats.female },
@@ -426,10 +350,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 { "product_name_en": "No Data", "count_pauchase": 1 }
             ];
         }
-
         var a = arr.map(item => item.product_name_en);
         var b = arr.map(item => item.count_pauchase);
-
         if (partId === 'part7') {
             var ctx_1 = document.getElementById("canvas_1");
             var canvas_1 = new Chart(ctx_1, {
@@ -591,11 +513,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         }
-
         hideLoading(partId);
     }
-
-    // 获取数据并更新UI
     function getDataAndUpdateUI() {
         const startTime = startTimeInput.value;
         const endTime = endTimeInput.value;
@@ -603,8 +522,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const endDate = endDateInput.value;
         const refStartDate = refStartDateInput.value;
         const refEndDate = refEndDateInput.value;
-
-        // 创建请求参数
         const params = {
             time_start: startTime,
             time_end: endTime,
@@ -613,23 +530,17 @@ document.addEventListener('DOMContentLoaded', function () {
             ref_date_start: refStartDate + ' ' + startTime,
             ref_date_end: refEndDate + ' ' + endTime,
         };
-
-        // 获取并显示仪表板数据
         fetchDashboardData(params)
             .then(data => {
                 displayResults(data);
             })
             .catch(error => {
-                // 获取仪表板数据时出错
                 console.error('Error occurred while fetching dashboard data:', error);
-
-                // 处理错误情况
                 for (let i = 1; i <= 11; i++) {
                     const card = document.getElementById(`part${i}`);
                     if (card) {
                         const resultValues = card.querySelectorAll('.result-value');
                         resultValues.forEach(value => {
-                            // 加载失败
                             value.textContent = 'Failed to load data!';
                             value.classList.add('error');
                         });
@@ -637,186 +548,126 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
     }
-
-    // 更新时间段选择器
     function updateTimeSelectors() {
         const startDate = startDateInput ? startDateInput.value || defaultStartDate : defaultStartDate;
         const endDate = endDateInput ? endDateInput.value || defaultEndDate : defaultEndDate;
-
         fetchAllTime(startDate, endDate)
             .then(timeSlots => {
-
-                // 保存当前选中的值
                 const currentStartTime = startTimeInput.value;
                 const currentEndTime = endTimeInput.value;
-
-                // 清空并重新填充选项
                 startTimeInput.innerHTML = '';
                 endTimeInput.innerHTML = '';
-
-                // 添加时间段选项
                 timeSlots.forEach(slot => {
                     const optionStart = document.createElement('option');
                     optionStart.value = slot.start;
                     optionStart.textContent = slot.start;
                     startTimeInput.appendChild(optionStart);
-
                     const optionEnd = document.createElement('option');
                     optionEnd.value = slot.end;
                     optionEnd.textContent = slot.end;
                     endTimeInput.appendChild(optionEnd);
                 });
-
-                // 恢复或设置默认值
                 if (timeSlots.length > 0) {
-                    // 尝试恢复之前的选择
                     if (currentStartTime && startTimeInput.querySelector(`option[value="${currentStartTime}"]`)) {
                         startTimeInput.value = currentStartTime;
                     } else {
                         startTimeInput.value = timeSlots[0].start;
                     }
-
-                    // 更新结束时间选择器
                     updateEndTimeOptions();
-
-                    // 尝试恢复之前的选择
                     if (currentEndTime && endTimeInput.querySelector(`option[value="${currentEndTime}"]`)) {
                         endTimeInput.value = currentEndTime;
                     } else {
-                        // 设置默认值为最后一项
                         endTimeInput.value = timeSlots[timeSlots.length - 1].end;
                     }
                 }
-
                 getDataAndUpdateUI();
             })
             .catch(error => {
-                // 获取时间段时出错
                 console.error('Error occurred while fetching time periods:', error);
-                // 添加错误选项
                 startTimeInput.innerHTML = '';
                 endTimeInput.innerHTML = '';
                 const option = document.createElement('option');
                 option.value = '';
-                // 错误：无法加载时间段
                 option.textContent = 'Error: Failed to load time periods!';
                 startTimeInput.appendChild(option);
                 endTimeInput.appendChild(option);
             });
     }
-
-    // 更新结束时间选项
     function updateEndTimeOptions() {
-
         if (!startTimeInput || !endTimeInput) return;
-
         const selectedStart = startTimeInput.value;
         const endOptions = Array.from(endTimeInput.options);
-
-        // 过滤出大于开始时间的选项
         const validEndOptions = endOptions.filter(option =>
             option.value > selectedStart || option.value === ""
         );
-
-        // 更新结束时间下拉框
         endTimeInput.innerHTML = '';
         validEndOptions.forEach(option => {
             endTimeInput.appendChild(option);
         });
-
-        // 自动选择第一个有效选项
         if (validEndOptions.length > 0) {
             endTimeInput.value = validEndOptions[0].value;
         }
     }
-
-    // 初始化仪表板
     function initializeDashboard() {
-
-        // 添加null检查
         if (!startDateInput || !endDateInput || !refStartDateInput || !refEndDateInput || !startTimeInput || !endTimeInput) {
-            // 无法找到必要的DOM元素
             console.error("Unable to find required DOM elements!");
             return;
         }
-
-        // 初始化时间段选择器
         updateTimeSelectors();
-
-        // 添加事件监听器
         if (startDateInput) {
             startDateInput.addEventListener('change', function () {
                 updateTimeSelectors();
             });
         }
-
         if (endDateInput) {
             endDateInput.addEventListener('change', function () {
                 updateTimeSelectors();
             });
         }
-
         if (refStartDateInput) {
             refStartDateInput.addEventListener('change', function () {
                 updateTimeSelectors();
             });
         }
-
         if (refEndDateInput) {
             refEndDateInput.addEventListener('change', function () {
                 updateTimeSelectors();
             });
         }
-
         if (startTimeInput) {
             startTimeInput.addEventListener('change', function () {
                 updateEndTimeOptions();
                 getDataAndUpdateUI();
             });
         }
-
         if (endTimeInput) {
             endTimeInput.addEventListener('change', function () {
                 getDataAndUpdateUI();
             });
         }
     }
-
-    // 初始化仪表板图表函数
     function setCharts(data, type = 'monthly_current') {
         const canvas = document.getElementById("canvas_11");
         const ctx = canvas.getContext('2d');
-
-        // 彻底销毁旧图表
         if (window.dashboardChart) {
             window.dashboardChart.destroy();
         }
-
-        // 重置画布 - 解决图表残留问题
         const newCanvas = document.createElement('canvas');
         newCanvas.id = "canvas_11";
         newCanvas.width = canvas.width;
         newCanvas.height = canvas.height;
         newCanvas.style.cssText = canvas.style.cssText;
         canvas.parentNode.replaceChild(newCanvas, canvas);
-
-        // 根据类型生成动态标签
         const today = new Date();
         let labels = [];
-
-        // 获取星期缩写
         function getDayAbbreviation(dayIndex) {
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             return days[dayIndex];
         }
-
-        // 完整月份名称
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
         switch (type) {
             case 'weekly_current':
-                // 从今天开始往前6天（共7天），最右边是今天
                 for (let i = 6; i >= 0; i--) {
                     const d = new Date();
                     d.setDate(d.getDate() - i);
@@ -826,9 +677,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     labels.push(`${month}/${date} ${dayAbbr}`);
                 }
                 break;
-
             case 'weekly_historical':
-                // 从最近的周日开始往前6天（共7天），最右边是周日
                 const lastSunday = new Date(today);
                 lastSunday.setDate(today.getDate() - today.getDay());
                 for (let i = 6; i >= 0; i--) {
@@ -840,41 +689,33 @@ document.addEventListener('DOMContentLoaded', function () {
                     labels.push(`${month}/${date} ${dayAbbr}`);
                 }
                 break;
-
             case 'monthly_current':
                 {
-                    // 当前周及前3周（共4周），最右边是本周
                     let w = 1;
                     for (let i = 3; i >= 0; i--) {
                         const weekStart = new Date(today);
                         weekStart.setDate(today.getDate() - today.getDay() - (7 * i));
                         const weekEnd = new Date(weekStart);
                         weekEnd.setDate(weekStart.getDate() + 6);
-
                         labels.push(`Week ${w} (${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()})`);
                         w++;
                     }
                     break;
                 }
-
             case 'monthly_historical':
                 {
-                    // 前4周（不含本周），最右边是上周
                     let w = 1;
                     for (let i = 4; i >= 1; i--) {
                         const weekStart = new Date(today);
                         weekStart.setDate(today.getDate() - today.getDay() - (7 * i));
                         const weekEnd = new Date(weekStart);
                         weekEnd.setDate(weekStart.getDate() + 6);
-
                         labels.push(`Week ${w} (${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()})`);
                         w++;
                     }
                     break;
                 }
-
             case 'quarterly_current':
-                // 当前月及前2个月（共3个月），最右边是本月
                 for (let i = 2; i >= 0; i--) {
                     const d = new Date(today);
                     d.setMonth(today.getMonth() - i);
@@ -883,9 +724,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     labels.push(`${year} ${monthName}`);
                 }
                 break;
-
             case 'quarterly_historical':
-                // 前3个月（不含本月），最右边是上个月
                 for (let i = 3; i >= 1; i--) {
                     const d = new Date(today);
                     d.setMonth(today.getMonth() - i);
@@ -894,9 +733,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     labels.push(`${year} ${monthName}`);
                 }
                 break;
-
             case 'yearly_current':
-                // 当前季度及前3个季度（共4个季度），最右边是本季度
                 for (let i = 3; i >= 0; i--) {
                     const q = Math.floor(today.getMonth() / 3) + 1 - i;
                     const year = today.getFullYear() - (q <= 0 ? 1 : 0);
@@ -904,9 +741,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     labels.push(`${year} Q${quarter}`);
                 }
                 break;
-
             case 'yearly_historical':
-                // 前4个季度（不含本季度），最右边是上个季度
                 for (let i = 4; i >= 1; i--) {
                     const q = Math.floor(today.getMonth() / 3) + 1 - i;
                     const year = today.getFullYear() - (q <= 0 ? 1 : 0);
@@ -914,21 +749,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     labels.push(`${year} Q${quarter}`);
                 }
                 break;
-
             default:
-                // 默认使用monthly_current格式
                 for (let i = 3; i >= 0; i--) {
                     const weekStart = new Date(today);
                     weekStart.setDate(today.getDate() - today.getDay() - (7 * i));
                     const weekEnd = new Date(weekStart);
                     weekEnd.setDate(weekStart.getDate() + 6);
-
                     labels.push(`Week ${i + 1} (${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()})`);
                 }
                 break;
         }
-
-        // 创建多数据集
         const datasets = [
             {
                 label: 'Male',
@@ -955,8 +785,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 maxBarThickness: type.includes('monthly') ? 20 : 40
             }
         ];
-
-        // 创建新图表
         window.dashboardChart = new Chart(newCanvas, {
             type: 'bar',
             data: {
@@ -967,14 +795,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 responsive: true,
                 maintainAspectRatio: false,
                 tooltips: {
-                    enabled: false // 禁用提示框
+                    enabled: false 
                 },
                 hover: {
-                    animationDuration: 0 // 禁用动画
+                    animationDuration: 0 
                 },
                 legend: {
                     display: true,
-                    position: 'right', // 图例位置配置
+                    position: 'right', 
                     labels: {
                         boxWidth: 20,
                         padding: 15,
@@ -998,26 +826,18 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     }]
                 },
-                // 修改setCharts函数中的animation.onComplete部分
                 animation: {
                     onComplete: function () {
                         const ctx = this.chart.ctx;
-                        ctx.save(); // 保存当前绘图状态
-
-                        // 1. 绘制柱状图上的数值标签
+                        ctx.save(); 
                         ctx.font = Chart.helpers.fontString(14, 'bold', Chart.defaults.global.defaultFontFamily);
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
-
-                        // 遍历数据集
                         this.data.datasets.forEach(function (dataset, i) {
                             const meta = this.getDatasetMeta(i);
-
-                            // 检查数据集是否隐藏
                             if (meta.hidden) {
-                                return; // 跳过隐藏的数据集
+                                return; 
                             }
-
                             meta.data.forEach(function (bar, index) {
                                 const data = dataset.data[index];
                                 if (data) {
@@ -1026,26 +846,19 @@ document.addEventListener('DOMContentLoaded', function () {
                                 }
                             });
                         }, this);
-
-                        // 2. 获取最后一个刻度的位置和文本
                         const xAxis = this.scales['x-axis-0'];
                         const lastTickIndex = xAxis.ticks.length - 1;
-                        const lastTick = labels[labels.length - 1]; // 直接使用原始标签
+                        const lastTick = labels[labels.length - 1]; 
                         const lastTickX = xAxis.getPixelForTick(lastTickIndex);
-
-                        // 3. 绘制红色标签
                         ctx.fillStyle = 'red';
                         ctx.font = Chart.helpers.fontString(12, 'bold', Chart.defaults.global.defaultFontFamily);
                         ctx.fillText(lastTick, lastTickX, xAxis.bottom - 8);
-
-                        ctx.restore(); // 恢复绘图状态
+                        ctx.restore(); 
                     }
                 }
             }
         });
     }
-
-    // 创建加载提示
     const canvasContainer = document.getElementById("canvas_11").parentNode;
     const loadingMessage = document.createElement("div");
     loadingMessage.id = "loadingMessage";
@@ -1059,14 +872,11 @@ document.addEventListener('DOMContentLoaded', function () {
     loadingMessage.style.textAlign = "center";
     canvasContainer.style.position = "relative";
     canvasContainer.appendChild(loadingMessage);
-
-    // 页面加载时只请求一次 Weekly Footfall Distribution Overall 数据
     fetch('/api/footfall-distribution')
         .then(res => res.json())
         .then(data => {
             window.footfallDistributionData = data;
             setCharts(data, 'monthly_current');
-            // 数据加载完成后移除加载提示
             loadingMessage.remove();
         })
         .catch(error => {
@@ -1074,15 +884,11 @@ document.addEventListener('DOMContentLoaded', function () {
             loadingMessage.textContent = "Failed to load data.";
             loadingMessage.style.color = "#DC2D65";
         });
-
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function () {
-            // 切换样式
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-
-            // 切换数据
-            if (!window.footfallDistributionData) return; // 确保数据已加载
+            if (!window.footfallDistributionData) return; 
             switch (btn.id) {
                 case 'historical-weekly-btn':
                     setCharts(window.footfallDistributionData, 'weekly_historical');
@@ -1111,35 +917,26 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-
-    // 初始化仪表板
     initializeDashboard();
-
     var btn = document.getElementById('downloadPdfBtn');
     if (btn) {
         btn.onclick = function () {
             var element = document.body;
-            // 获取今天日期
             var today = new Date();
             var yyyy = today.getFullYear();
             var mm = String(today.getMonth() + 1).padStart(2, '0');
             var dd = String(today.getDate()).padStart(2, '0');
             var filename = `dashboard_${yyyy}${mm}${dd}.pdf`;
-
             var opt = {
                 margin: 0,
                 filename: filename,
                 image: { type: 'jpeg', quality: 1 },
                 html2canvas: { scale: 2 },
-                // jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' }
-                // 自定义宽高（单位mm）：format: [420, 297]
                 jsPDF: { unit: 'mm', format: [380, 500], orientation: 'landscape' }
             };
             html2pdf().set(opt).from(element).save();
         }
     }
-
-    // 创建图片弹出层
     const modal = document.createElement('div');
     modal.className = 'camera-modal';
     modal.innerHTML = `
@@ -1148,43 +945,32 @@ document.addEventListener('DOMContentLoaded', function () {
             <img src="./themes/default/images/picture_total.png" alt="Camera View">
         </div>`;
     document.body.appendChild(modal);
-
     const cameraImageMap = {
         A6: './themes/default/images/picture_A6.png',
         A2: './themes/default/images/picture_A2.png',
         A3: './themes/default/images/picture_A3.png',
         A4: './themes/default/images/picture_A4.png',
     };
-
-    // 添加点击事件监听器
     document.querySelectorAll('.camera-title').forEach(title => {
         title.addEventListener('click', function () {
             const cameraId = this.getAttribute('data-camera-id');
             const imagePath = cameraImageMap[cameraId] || './themes/default/images/picture_total.png';
-
             const modal = document.querySelector('.camera-modal');
             const modalImage = modal.querySelector('img');
-
             modalImage.src = imagePath;
             modal.style.display = 'flex';
         });
     });
-
-    // 关闭按钮功能
     document.querySelector('.close-modal').addEventListener('click', function () {
         const modal = document.querySelector('.camera-modal');
         modal.style.display = 'none';
     });
-
-    // 点击背景关闭
     modal.addEventListener('click', function (e) {
         if (e.target === modal) {
             const modal = document.querySelector('.camera-modal');
             modal.style.display = 'none';
         }
     });
-
-    // ESC键关闭
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && modal.style.display === 'flex') {
             const modal = document.querySelector('.camera-modal');
