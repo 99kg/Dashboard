@@ -205,45 +205,55 @@ def update_last_login():
 @app.route("/api/alltime", methods=["GET"])
 @login_required
 def get_all_time():
-    # 获取查询参数（日期范围）
-    start_date = request.args.get("date_start")
-    end_date = request.args.get("date_end")
+    # 使用数据库提供的数据
+    # # 获取查询参数（日期范围）
+    # start_date = request.args.get("date_start")
+    # end_date = request.args.get("date_end")
 
-    conn = get_db_connection()
-    cur = conn.cursor()
+    # conn = get_db_connection()
+    # cur = conn.cursor()
 
-    try:
-        # 构建基础查询
-        base_query = """
-            SELECT DISTINCT 
-                TO_CHAR(start_time, 'HH24:MI:SS') AS start_time_str,
-                TO_CHAR(end_time, 'HH24:MI:SS') AS end_time_str
-            FROM video_analysis
-            WHERE 1=1
-        """
-        params = []
+    # try:
+    #     # 构建基础查询
+    #     base_query = """
+    #         SELECT DISTINCT 
+    #             TO_CHAR(start_time, 'HH24:MI:SS') AS start_time_str,
+    #             TO_CHAR(end_time, 'HH24:MI:SS') AS end_time_str
+    #         FROM video_analysis
+    #         WHERE 1=1
+    #     """
+    #     params = []
 
-        # 添加日期范围条件
-        if start_date and end_date:
-            base_query += " AND start_time::date BETWEEN %s AND %s"
-            params.extend([start_date, end_date])
+    #     # 添加日期范围条件
+    #     if start_date and end_date:
+    #         base_query += " AND start_time::date BETWEEN %s AND %s"
+    #         params.extend([start_date, end_date])
 
-        # 添加排序
-        base_query += " ORDER BY start_time_str, end_time_str"
+    #     # 添加排序
+    #     base_query += " ORDER BY start_time_str, end_time_str"
 
-        cur.execute(base_query, params)
-        time_slots = cur.fetchall()
+    #     cur.execute(base_query, params)
+    #     time_slots = cur.fetchall()
 
-        # 转换为前端需要的格式: [{start: "00:00:00", end: "00:59:59"}, ...]
-        formatted_slots = [{"start": slot[0], "end": slot[1]} for slot in time_slots]
+    #     # 转换为前端需要的格式: [{start: "00:00:00", end: "00:59:59"}, ...]
+    #     formatted_slots = [{"start": slot[0], "end": slot[1]} for slot in time_slots]
 
-        return jsonify(formatted_slots)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cur.close()
-        conn.close()
+    #     return jsonify(formatted_slots)
+    # except Exception as e:
+    #     return jsonify({"error": str(e)}), 500
+    # finally:
+    #     cur.close()
+    #     conn.close()
 
+    # 生成固定的24小时时间段
+    time_slots = []
+    for hour in range(24):
+        start_time = f"{hour:02d}:00:00"
+        end_time = f"{hour:02d}:59:59"
+        time_slots.append({"start": start_time, "end": end_time})
+
+    return jsonify(time_slots)
+    
 
 @app.route("/api/dashboard", methods=["POST"])
 @login_required
