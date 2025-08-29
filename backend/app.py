@@ -26,27 +26,25 @@ from common import (
     get_reference_visitors,
 )
 
-# 加载环境变量
+
 load_dotenv()
 
-# 获取项目根目录
+
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 frontend_path = os.path.join(project_root, "frontend")
 
-#  创建Flask应用
+
 app = Flask(__name__, static_folder=frontend_path, static_url_path="")
 
-# 设置安全密钥（在生产环境中，建议在 .env 文件中设置 SECRET_KEY 环境变量，以确保密钥在服务器重启后保持一致。如果每次服务器重启都生成新的密钥，那么所有用户的会话都会失效。）
+
 app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(32))
 
-# 数据库配置
+
 DB_CONFIG = DATABASE_CONFIG
 
 
-# 登录保护装饰器
 def login_required(f):
     @wraps(f)
-    # 检查用户是否已登录
     def decorated_function(*args, **kwargs):
         if not session.get("logged_in"):
             return redirect(url_for("login_page"))
@@ -96,12 +94,10 @@ def login():
 
         user_id, password_hash, role, last_login = user
 
-        # 使用SHA-256哈希验证密码
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         if hashed_password != password_hash:
             return jsonify({"error": "Incorrect password."}), 401
 
-        # 更新最后登录时间
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         cur.execute(
             """
@@ -113,7 +109,6 @@ def login():
         )
         conn.commit()
 
-        # 创建会话
         session["user_id"] = user_id
         session["username"] = username
         session["role"] = role
@@ -144,7 +139,7 @@ def dashboard():
 @app.route("/api/check-session")
 def check_session():
     if session.get("logged_in"):
-        # 从会话中获取最后登录时间
+
         last_login = session.get("last_login", "Never")
         if isinstance(last_login, datetime):
             last_login = last_login.strftime("%Y-%m-%d %H:%M:%S")
@@ -170,10 +165,9 @@ def update_last_login():
     cur = conn.cursor()
 
     try:
-        # 获取当前时间作为新的最后登录时间
+
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # 更新数据库中的最后登录时间
         cur.execute(
             """
             UPDATE users 
@@ -205,47 +199,7 @@ def update_last_login():
 @app.route("/api/alltime", methods=["GET"])
 @login_required
 def get_all_time():
-    # 使用数据库提供的数据
-    # # 获取查询参数（日期范围）
-    # start_date = request.args.get("date_start")
-    # end_date = request.args.get("date_end")
 
-    # conn = get_db_connection()
-    # cur = conn.cursor()
-
-    # try:
-    #     # 构建基础查询
-    #     base_query = """
-    #         SELECT DISTINCT 
-    #             TO_CHAR(start_time, 'HH24:MI:SS') AS start_time_str,
-    #             TO_CHAR(end_time, 'HH24:MI:SS') AS end_time_str
-    #         FROM video_analysis
-    #         WHERE 1=1
-    #     """
-    #     params = []
-
-    #     # 添加日期范围条件
-    #     if start_date and end_date:
-    #         base_query += " AND start_time::date BETWEEN %s AND %s"
-    #         params.extend([start_date, end_date])
-
-    #     # 添加排序
-    #     base_query += " ORDER BY start_time_str, end_time_str"
-
-    #     cur.execute(base_query, params)
-    #     time_slots = cur.fetchall()
-
-    #     # 转换为前端需要的格式: [{start: "00:00:00", end: "00:59:59"}, ...]
-    #     formatted_slots = [{"start": slot[0], "end": slot[1]} for slot in time_slots]
-
-    #     return jsonify(formatted_slots)
-    # except Exception as e:
-    #     return jsonify({"error": str(e)}), 500
-    # finally:
-    #     cur.close()
-    #     conn.close()
-
-    # 生成固定的24小时时间段
     time_slots = []
     for hour in range(24):
         start_time = f"{hour:02d}:00:00"
@@ -253,7 +207,7 @@ def get_all_time():
         time_slots.append({"start": start_time, "end": end_time})
 
     return jsonify(time_slots)
-    
+
 
 @app.route("/api/dashboard", methods=["POST"])
 @login_required
@@ -268,7 +222,6 @@ def get_dashboard_data():
     cur = conn.cursor()
 
     try:
-        # Part 1: Total visitors and comparison
         total_visitors_in, total_visitors_out = get_total_visitors(
             conn, date_start, date_end
         )
@@ -276,10 +229,9 @@ def get_dashboard_data():
             conn, ref_date_start, ref_date_end
         )
 
-        # 确保流量不为负数
         if total_visitors_in < 0:
             total_visitors_in = 0
-        # 确保ref流量不为负数
+
         if reference_visitors_in < 0:
             reference_visitors_in = 0
 
@@ -287,16 +239,13 @@ def get_dashboard_data():
             total_visitors_in, reference_visitors_in
         )
 
-        # Part 2: Peak and Low periods(by in_count)
         peak_period, low_period = get_peak_and_low_periods(conn, date_start, date_end)
 
-        # Parts 3-6: Camera specific stats
         a6_stats = get_camera_stats(conn, "A6", date_start, date_end)
         a2_stats = get_camera_stats(conn, "A2", date_start, date_end)
         a3_stats = get_camera_stats(conn, "A3", date_start, date_end)
         a4_stats = get_camera_stats(conn, "A4", date_start, date_end)
 
-        # Part 7: Cold Storage (A7 and A6, 专用方法)
         cold_storage_a7_stats = get_camera_stats(conn, "A7", date_start, date_end)
         cold_storage_a6_stats = get_camera_stats(conn, "A6", date_start, date_end)
         cold_storage_in = (
@@ -317,10 +266,9 @@ def get_dashboard_data():
             + cold_storage_a6_ref_stats["total_out"]
         )
 
-        # 确保流量不为负数
         if cold_storage_in < 0:
             cold_storage_in = 0
-        # 确保ref流量不为负数
+
         if cold_storage_ref_in < 0:
             cold_storage_ref_in = 0
 
@@ -352,7 +300,6 @@ def get_dashboard_data():
                 + cold_storage_a6_gender["unknown"],
             }
 
-        # part 8:A8
         a8_stats = get_camera_stats(conn, "A8", date_start, date_end)
         a8_value_in = a8_stats["total_in"]
         a8_value_out = a8_stats["total_out"]
@@ -360,10 +307,9 @@ def get_dashboard_data():
         a8_ref_stats = get_camera_stats(conn, "A8", ref_date_start, ref_date_end)
         a8_ref_in = a8_ref_stats["total_in"]
 
-        # 确保流量不为负数
         if a8_value_in < 0:
             a8_value_in = 0
-        # 确保ref流量不为负数
+
         if a8_ref_in < 0:
             a8_ref_in = 0
 
@@ -379,7 +325,6 @@ def get_dashboard_data():
                 a8_value_in, a8_male_percent, a8_female_percent, a8_unknown_percent
             )
 
-        # Part 10: 2nd Floor (A2, A3, A1, A6)
         a1_stats = get_camera_stats(conn, "A1", date_start, date_end)
         second_floor_in = (
             a1_stats["total_in"]
@@ -406,10 +351,9 @@ def get_dashboard_data():
             + a6_ref_stats["total_in"]
         )
 
-        # 确保流量不为负数
         if second_floor_in < 0:
             second_floor_in = 0
-        # 确保ref流量不为负数
+
         if second_floor_ref_in < 0:
             second_floor_ref_in = 0
 
@@ -460,7 +404,6 @@ def get_dashboard_data():
                 + a6_gender["unknown"],
             }
 
-        # Part 9: Canteen (A4 and A5)
         a5_stats = get_camera_stats(conn, "A5", date_start, date_end)
         canteen_value_in = a4_stats["total_in"] + a5_stats["total_in"]
         canteen_value_out = a4_stats["total_out"] + a5_stats["total_out"]
@@ -470,13 +413,12 @@ def get_dashboard_data():
 
         canteen_value_ref_in = a4_ref_stats["total_in"] + a5_ref_stats["total_in"]
 
-        # 确保流量不为负数
         if canteen_value_in < 0:
             canteen_value_in = 0
-        # 确保ref流量不为负数
+
         if canteen_value_ref_in < 0:
             canteen_value_ref_in = 0
-        # 确保canteen区域人数不超过2nd Floor区域人数，防止数据错误
+
         if canteen_value_in > second_floor_in:
             canteen_value_in = second_floor_in
 
@@ -509,17 +451,15 @@ def get_dashboard_data():
                 "unknown": a4_gender["unknown"] + a5_gender["unknown"],
             }
 
-        # Part 11: Gender breakdown
         total_stats = get_camera_stats(conn, None, date_start, date_end)
         total_value_in = total_stats["total_in"]
 
         total_ref_stats = get_camera_stats(conn, None, ref_date_start, ref_date_end)
         total_ref_value_in = total_ref_stats["total_in"]
 
-        # 确保流量不为负数
         if total_value_in < 0:
             total_value_in = 0
-        # 确保ref流量不为负数
+
         if total_ref_value_in < 0:
             total_ref_value_in = 0
 
@@ -537,7 +477,7 @@ def get_dashboard_data():
                 total_female_percent,
                 total_unknown_percent,
             )
-            # 计算儿童流量
+
             total_minor_in = int(float(total_minor_percent) / 100.0 * total_value_in)
 
         if total_ref_value_in == 0:
@@ -554,12 +494,11 @@ def get_dashboard_data():
                 total_ref_female_percent,
                 total_ref_unknown_percent,
             )
-            # 计算儿童流量
+
             total_ref_minor_in = int(
                 float(total_ref_minor_percent) / 100.0 * total_ref_value_in
             )
 
-        # 计算百分比变化
         male_percent_change = calculate_percentage_change(
             total_gender["male"], total_ref_gender["male"]
         )
@@ -570,12 +509,10 @@ def get_dashboard_data():
             total_gender["unknown"], total_ref_gender["unknown"]
         )
 
-        # 单独计算儿童百分比变化
         minor_percent_change = calculate_percentage_change(
             total_minor_in, total_ref_minor_in
         )
 
-        # 返回结果
         return jsonify(
             {
                 "part1": {
@@ -662,11 +599,9 @@ def get_footfall_distribution():
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        # part 12
-        # ----------- Part 12 统计 -----------
+
         today = date.today()
 
-        # 1. weekly_current: 本周（含今天）前7天
         weekly_current_days = [(today - timedelta(days=i)) for i in range(6, -1, -1)]
         weekly_current = {"male": [], "female": [], "children": [], "unknown": []}
         for d in weekly_current_days:
@@ -704,7 +639,6 @@ def get_footfall_distribution():
             weekly_current["children"].append(int(total_in * children_percent))
             weekly_current["unknown"].append(int(total_in * unknown_percent))
 
-        # 2. weekly_historical: 上一周（不含本周），周一到周日
         last_week_start = today - timedelta(days=today.weekday() + 7)
         last_week_days = [(last_week_start + timedelta(days=i)) for i in range(7)]
         weekly_historical = {"male": [], "female": [], "children": [], "unknown": []}
@@ -743,7 +677,6 @@ def get_footfall_distribution():
             weekly_historical["children"].append(int(total_in * children_percent))
             weekly_historical["unknown"].append(int(total_in * unknown_percent))
 
-        # 3. monthly_current: 包含本周在内的前4周
         monthly_current = {"male": [], "female": [], "children": [], "unknown": []}
         for i in range(3, -1, -1):
             week_start = today - timedelta(days=today.weekday() + (7 * i))
@@ -783,7 +716,6 @@ def get_footfall_distribution():
             monthly_current["children"].append(int(total_in * children_percent))
             monthly_current["unknown"].append(int(total_in * unknown_percent))
 
-        # 4. monthly_historical: 不含本周的前4周
         monthly_historical = {"male": [], "female": [], "children": [], "unknown": []}
         for i in range(4, 0, -1):
             week_start = today - timedelta(days=today.weekday() + (7 * i))
@@ -823,7 +755,6 @@ def get_footfall_distribution():
             monthly_historical["children"].append(int(total_in * children_percent))
             monthly_historical["unknown"].append(int(total_in * unknown_percent))
 
-        # 5. quarterly_current: 包含本月在内的前3个月
         quarterly_current = {"male": [], "female": [], "children": [], "unknown": []}
         for i in range(2, -1, -1):
             month_date = today.replace(day=1) - timedelta(days=30 * i)
@@ -864,7 +795,6 @@ def get_footfall_distribution():
             quarterly_current["children"].append(int(total_in * children_percent))
             quarterly_current["unknown"].append(int(total_in * unknown_percent))
 
-        # 6. quarterly_historical: 不含本月的前3个月
         quarterly_historical = {"male": [], "female": [], "children": [], "unknown": []}
         for i in range(3, 0, -1):
             month_date = today.replace(day=1) - timedelta(days=30 * i)
@@ -905,7 +835,6 @@ def get_footfall_distribution():
             quarterly_historical["children"].append(int(total_in * children_percent))
             quarterly_historical["unknown"].append(int(total_in * unknown_percent))
 
-        # 7. yearly_current: 包含本季度在内的前4季度
         yearly_current = {"male": [], "female": [], "children": [], "unknown": []}
         for i in range(3, -1, -1):
             q_year = today.year - ((today.month - 1) // 3 < i)
@@ -945,7 +874,6 @@ def get_footfall_distribution():
             yearly_current["children"].append(int(total_in * children_percent))
             yearly_current["unknown"].append(int(total_in * unknown_percent))
 
-        # 8. yearly_historical: 不含本季度的前4季度
         yearly_historical = {"male": [], "female": [], "children": [], "unknown": []}
         for i in range(4, 0, -1):
             q_year = today.year - ((today.month - 1) // 3 < i)
@@ -985,7 +913,6 @@ def get_footfall_distribution():
             yearly_historical["children"].append(int(total_in * children_percent))
             yearly_historical["unknown"].append(int(total_in * unknown_percent))
 
-        # 整理 Part 12 的数据
         part12 = {
             "weekly_current": weekly_current,
             "weekly_historical": weekly_historical,
@@ -1018,7 +945,7 @@ def register():
     cur = conn.cursor()
 
     try:
-        # 验证管理员密码
+
         cur.execute("SELECT password_hash FROM users WHERE role = 'admin' LIMIT 1")
         admin_password_hash = cur.fetchone()
 
@@ -1029,12 +956,10 @@ def register():
         if hashed_admin_password != admin_password_hash[0]:
             return jsonify({"error": "Invalid admin password."}), 403
 
-        # 检查用户名是否已存在
         cur.execute("SELECT id FROM users WHERE username = %s", (username,))
         if cur.fetchone():
             return jsonify({"error": "User already exists."}), 409
 
-        # 校验用户名长度
         if len(username) < 3 or len(username) > 20:
             return (
                 jsonify(
@@ -1043,7 +968,6 @@ def register():
                 400,
             )
 
-        # 校验密码长度
         if len(password) < 6 or len(password) > 20:
             return (
                 jsonify(
@@ -1052,7 +976,6 @@ def register():
                 400,
             )
 
-        # 创建新用户
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         cur.execute(
             """
@@ -1090,7 +1013,7 @@ def admin_login():
     cur = conn.cursor()
 
     try:
-        # 查询用户信息
+
         cur.execute(
             "SELECT id, password_hash, role FROM users WHERE username = %s",
             (username,),
@@ -1105,7 +1028,6 @@ def admin_login():
 
         user_id, password_hash, role = user
 
-        # 验证密码
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         if hashed_password != password_hash:
             return (
@@ -1113,7 +1035,6 @@ def admin_login():
                 401,
             )
 
-        # 检查角色是否为管理员
         if role != "admin":
             return (
                 jsonify(
@@ -1125,7 +1046,6 @@ def admin_login():
                 403,
             )
 
-        # 设置会话
         session["user_id"] = user_id
         session["username"] = username
         session["role"] = role
@@ -1195,14 +1115,12 @@ def update_user(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # 校验用户名长度
     if new_username and (len(new_username) < 3 or len(new_username) > 20):
         return (
             jsonify({"error": "Username must be between 3 and 20 characters long."}),
             400,
         )
 
-    # 校验密码长度
     if new_password and (len(new_password) < 6 or len(new_password) > 20):
         return (
             jsonify({"error": "Password must be between 6 and 20 characters long."}),
@@ -1210,7 +1128,7 @@ def update_user(user_id):
         )
 
     try:
-        # 检查用户名是否已存在
+
         cur.execute(
             "SELECT id FROM users WHERE username = %s AND id != %s",
             (new_username, user_id),
@@ -1269,7 +1187,6 @@ def delete_user(user_id):
         conn.close()
 
 
-# 处理Chrome DevTools请求
 @app.route("/.well-known/appspecific/com.chrome.devtools.json", methods=["GET"])
 def handle_chrome_devtools():
     return jsonify({"message": "Not Found"}), 404
