@@ -410,7 +410,10 @@ def generate_pdf_report(stats_data, report_date, output_path):
                 ["Lowest Density of People", area["lowest_period"]],
             ]
 
-            table = Table(data)
+            # 设置固定列宽
+            col_widths = [150, 200] 
+            
+            table = Table(data, colWidths=col_widths)
             table.setStyle(
                 TableStyle(
                     [
@@ -440,7 +443,6 @@ def generate_pdf_report(stats_data, report_date, output_path):
     # 生成PDF
     doc.build(elements)
     print(f"PDF report generated at: {output_path}")
-
 
 def main():
     # 计算前一天的日期
