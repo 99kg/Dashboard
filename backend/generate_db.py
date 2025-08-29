@@ -2,8 +2,6 @@ import psycopg2
 from datetime import datetime, timedelta
 import random
 import time
-
-
 DATABASE_CONFIG = {
     "host": "localhost",
     "port": 5432,
@@ -11,15 +9,12 @@ DATABASE_CONFIG = {
     "password": "postgres",
     "dbname": "postgres",
 }
-
-
 def setup_database():
     create_table_sql = """
     -- DROP TABLE
     DROP TABLE IF EXISTS public.run_records CASCADE;
     DROP TABLE IF EXISTS public.video_analysis CASCADE;
     DROP TABLE IF EXISTS public.users CASCADE;
-
     -- CREATE TABLE
     CREATE TABLE public.run_records(
         run_id serial NOT NULL,
@@ -28,7 +23,6 @@ def setup_database():
         total_videos integer NOT NULL,
         PRIMARY KEY (run_id)
     );
-
     -- CREATE TABLE
     CREATE TABLE public.video_analysis (
         analysis_id serial NOT NULL,
@@ -51,7 +45,6 @@ def setup_database():
         analysis_time timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP(0) NOT NULL,
         PRIMARY KEY (analysis_id)
     );
-
     -- CREATE INDEX
     CREATE INDEX idx_run_records_date ON run_records(run_date);
     CREATE INDEX idx_video_analysis_run ON video_analysis(run_id);
@@ -71,7 +64,6 @@ def setup_database():
     CREATE INDEX idx_video_analysis_weekly ON video_analysis (date_trunc('week', start_time));
     CREATE INDEX idx_video_analysis_quarter ON video_analysis (date_trunc('quarter', start_time));
     CREATE INDEX idx_video_analysis_camera_period ON video_analysis (camera_name, start_time, end_time);
-
     -- CREATE TABLE
     CREATE TABLE public.users( 
         id SERIAL PRIMARY KEY,
@@ -80,7 +72,6 @@ def setup_database():
         role VARCHAR (20) NOT NULL DEFAULT 'user',
         last_login timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP(0) NOT NULL
     );
-
     -- INSERT DATA
     INSERT INTO users(username, password_hash, role) 
     VALUES ( 
@@ -101,81 +92,57 @@ def setup_database():
     finally:
         if conn is not None:
             conn.close()
-
-
 def generate_video_analysis_data():
     try:
         conn = psycopg2.connect(**DATABASE_CONFIG)
         cur = conn.cursor()
-
         start_date = datetime(2024, 9, 1)
         end_date = datetime(2025, 8, 31)
         current_date = start_date
         total_records = 0
-
         print(f"开始生成数据: {start_date} 到 {end_date}")
-
         while current_date <= end_date:
-
             for hour in range(24):
-
                 base_hour_flow = 10 + hour + random.uniform(-3, 3)
-
                 floor_flow = int(base_hour_flow * 0.6 + random.uniform(0, 5))
-
                 external_in = int(base_hour_flow * 0.4 + random.uniform(0, 3))
                 external_out = int(base_hour_flow * 0.3 + random.uniform(0, 3))
-
                 for camera_num in range(1, 9):
                     camera_name = f"A{camera_num}"
-
                     if camera_name == "A7":
-
                         in_count = external_in + floor_flow
-
                         out_count = external_out + floor_flow
                         total_people = in_count + out_count
-
                     elif camera_name == "A6":
-
                         in_count = floor_flow
                         out_count = floor_flow - 2
                         total_people = in_count + out_count
-
                     else:
                         base_count = 5 + (camera_num - 1) * 2 + (hour / 2)
                         base_count = max(5, min(50, base_count))
                         base_count += random.uniform(-5, 5)
                         base_count = max(5, base_count)
-
                         in_count = int(base_count * 0.6 + random.uniform(0, 5))
                         out_count = int(base_count * 0.4 + random.uniform(0, 5))
                         total_people = in_count + out_count
-
                     male_count = int(total_people * 0.5 + random.uniform(-2.5, 2.5))
                     female_count = int(total_people * 0.3 + random.uniform(-2.5, 2.5))
                     unknown_gender_count = total_people - male_count - female_count
-
                     if unknown_gender_count <= 0:
                         unknown_gender_count = 1
                         female_count = total_people - male_count - unknown_gender_count
-
                     adult_count = int(total_people * 0.6 + random.uniform(-2.5, 2.5))
                     minor_count = int(total_people * 0.2 + random.uniform(-2.5, 2.5))
                     unknown_age_count = total_people - adult_count - minor_count
-
                     if unknown_age_count <= 0:
                         unknown_age_count = 1
                         minor_count = total_people - adult_count - unknown_age_count
-
                     video_name = (
                         f"{camera_name}-{current_date.strftime('%Y%m%d')}-"
                         f"{hour:02d}0000-{hour:02d}5959.mp4"
                     )
-
                     start_time = current_date + timedelta(hours=hour)
                     end_time = start_time + timedelta(hours=1) - timedelta(seconds=1)
-
                     analysis_time = datetime(
                         current_date.year,
                         current_date.month,
@@ -184,7 +151,6 @@ def generate_video_analysis_data():
                         44,
                         0,
                     ) + timedelta(seconds=random.randint(0, 12 * 3600))
-
                     cur.execute(
                         """
                         INSERT INTO public.video_analysis (
@@ -216,31 +182,22 @@ def generate_video_analysis_data():
                             analysis_time,
                         ),
                     )
-
             if current_date.day % 10 == 0:
                 conn.commit()
                 print(f"已提交数据到 {current_date.strftime('%Y-%m-%d')}")
-
             current_date += timedelta(days=1)
             total_records += 192
-
         conn.commit()
         print(f"数据生成完成! 共生成 {total_records} 条记录")
         cur.close()
-
     except Exception as e:
         print(f"数据生成出错: {e}")
     finally:
         if conn is not None:
             conn.close()
-
-
 if __name__ == "__main__":
-
     setup_database()
-
     start_time = time.time()
     generate_video_analysis_data()
     end_time = time.time()
-
     print(f"总耗时: {end_time - start_time:.2f} 秒")

@@ -25,79 +25,51 @@ from common import (
     get_total_visitors,
     get_reference_visitors,
 )
-
-
 load_dotenv()
-
-
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 frontend_path = os.path.join(project_root, "frontend")
-
-
 app = Flask(__name__, static_folder=frontend_path, static_url_path="")
-
-
 app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(32))
-
-
 DB_CONFIG = DATABASE_CONFIG
-
-
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get("logged_in"):
             return redirect(url_for("login_page"))
         return f(*args, **kwargs)
-
     return decorated_function
-
-
 @app.route("/")
 def index():
     if session.get("logged_in"):
         return redirect(url_for("dashboard"))
     return redirect(url_for("login_page"))
-
-
 @app.route("/login", methods=["GET"])
 def login_page():
     return send_from_directory(app.static_folder, "login.html")
-
-
 @app.route("/register", methods=["GET"])
 def register_page():
     return send_from_directory(app.static_folder, "register.html")
-
-
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.json
     username = data.get("username")
     password = data.get("password")
-
     if not username or not password:
         return jsonify({"error": "Username and password required"}), 400
-
     conn = get_db_connection()
     cur = conn.cursor()
-
     try:
         cur.execute(
             "SELECT id, password_hash, role, last_login FROM users WHERE username = %s",
             (username,),
         )
         user = cur.fetchone()
-
         if not user:
             return jsonify({"error": "Username does not exist."}), 401
-
         user_id, password_hash, role, last_login = user
-
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         if hashed_password != password_hash:
             return jsonify({"error": "Incorrect password."}), 401
-
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         cur.execute(
             """
@@ -108,42 +80,32 @@ def login():
             (current_time, user_id),
         )
         conn.commit()
-
         session["user_id"] = user_id
         session["username"] = username
         session["role"] = role
         session["last_login"] = last_login
         session["logged_in"] = True
-
         return jsonify({"message": "Login successful", "last_login": last_login}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         cur.close()
         conn.close()
-
-
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("login_page"))
-
-
 @app.route("/dashboard")
 def dashboard():
     if not session.get("logged_in"):
         return redirect(url_for("login_page"))
     return send_from_directory(app.static_folder, "dashboard.html")
-
-
 @app.route("/api/check-session")
 def check_session():
     if session.get("logged_in"):
-
         last_login = session.get("last_login", "Never")
         if isinstance(last_login, datetime):
             last_login = last_login.strftime("%Y-%m-%d %H:%M:%S")
-
         return jsonify(
             {
                 "authenticated": True,
@@ -153,21 +115,15 @@ def check_session():
             }
         )
     return jsonify({"authenticated": False}), 401
-
-
 @app.route("/api/update-last-login", methods=["POST"])
 @login_required
 def update_last_login():
     if not session.get("logged_in") or "user_id" not in session:
         return jsonify({"error": "Authentication required"}), 401
-
     conn = get_db_connection()
     cur = conn.cursor()
-
     try:
-
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
         cur.execute(
             """
             UPDATE users 
@@ -177,9 +133,7 @@ def update_last_login():
         """,
             (current_time, session["user_id"]),
         )
-
         conn.commit()
-
         return (
             jsonify(
                 {
@@ -194,21 +148,15 @@ def update_last_login():
     finally:
         cur.close()
         conn.close()
-
-
 @app.route("/api/alltime", methods=["GET"])
 @login_required
 def get_all_time():
-
     time_slots = []
     for hour in range(24):
         start_time = f"{hour:02d}:00:00"
         end_time = f"{hour:02d}:59:59"
         time_slots.append({"start": start_time, "end": end_time})
-
     return jsonify(time_slots)
-
-
 @app.route("/api/dashboard", methods=["POST"])
 @login_required
 def get_dashboard_data():
@@ -217,10 +165,8 @@ def get_dashboard_data():
     date_end = data.get("date_end")
     ref_date_start = data.get("ref_date_start")
     ref_date_end = data.get("ref_date_end")
-
     conn = get_db_connection()
     cur = conn.cursor()
-
     try:
         total_visitors_in, total_visitors_out = get_total_visitors(
             conn, date_start, date_end
@@ -228,24 +174,18 @@ def get_dashboard_data():
         reference_visitors_in = get_reference_visitors(
             conn, ref_date_start, ref_date_end
         )
-
         if total_visitors_in < 0:
             total_visitors_in = 0
-
         if reference_visitors_in < 0:
             reference_visitors_in = 0
-
         total_percent_change = calculate_percentage_change(
             total_visitors_in, reference_visitors_in
         )
-
         peak_period, low_period = get_peak_and_low_periods(conn, date_start, date_end)
-
         a6_stats = get_camera_stats(conn, "A6", date_start, date_end)
         a2_stats = get_camera_stats(conn, "A2", date_start, date_end)
         a3_stats = get_camera_stats(conn, "A3", date_start, date_end)
         a4_stats = get_camera_stats(conn, "A4", date_start, date_end)
-
         cold_storage_a7_stats = get_camera_stats(conn, "A7", date_start, date_end)
         cold_storage_a6_stats = get_camera_stats(conn, "A6", date_start, date_end)
         cold_storage_in = (
@@ -254,7 +194,6 @@ def get_dashboard_data():
         cold_storage_out = (
             cold_storage_a7_stats["total_out"] + cold_storage_a6_stats["total_in"]
         )
-
         cold_storage_a7_ref_stats = get_camera_stats(
             conn, "A7", ref_date_start, ref_date_end
         )
@@ -265,17 +204,13 @@ def get_dashboard_data():
             cold_storage_a7_ref_stats["total_in"]
             + cold_storage_a6_ref_stats["total_out"]
         )
-
         if cold_storage_in < 0:
             cold_storage_in = 0
-
         if cold_storage_ref_in < 0:
             cold_storage_ref_in = 0
-
         cold_storage_percent = calculate_percentage_change(
             cold_storage_in, cold_storage_ref_in
         )
-
         if cold_storage_in == 0:
             cold_storage_gender = {"male": 0, "female": 0, "unknown": 0}
         else:
@@ -291,7 +226,6 @@ def get_dashboard_data():
                 cold_storage_a6_stats["female_percent"],
                 cold_storage_a6_stats["unknown_percent"],
             )
-
             cold_storage_gender = {
                 "male": cold_storage_a7_gender["male"] + cold_storage_a6_gender["male"],
                 "female": cold_storage_a7_gender["female"]
@@ -299,22 +233,16 @@ def get_dashboard_data():
                 "unknown": cold_storage_a7_gender["unknown"]
                 + cold_storage_a6_gender["unknown"],
             }
-
         a8_stats = get_camera_stats(conn, "A8", date_start, date_end)
         a8_value_in = a8_stats["total_in"]
         a8_value_out = a8_stats["total_out"]
-
         a8_ref_stats = get_camera_stats(conn, "A8", ref_date_start, ref_date_end)
         a8_ref_in = a8_ref_stats["total_in"]
-
         if a8_value_in < 0:
             a8_value_in = 0
-
         if a8_ref_in < 0:
             a8_ref_in = 0
-
         a8_percent = calculate_percentage_change(a8_value_in, a8_ref_in)
-
         if a8_value_in == 0:
             a8_gender = {"male": 0, "female": 0, "unknown": 0}
         else:
@@ -324,7 +252,6 @@ def get_dashboard_data():
             a8_gender = get_gender_count(
                 a8_value_in, a8_male_percent, a8_female_percent, a8_unknown_percent
             )
-
         a1_stats = get_camera_stats(conn, "A1", date_start, date_end)
         second_floor_in = (
             a1_stats["total_in"]
@@ -338,29 +265,23 @@ def get_dashboard_data():
             + a3_stats["total_out"]
             + a6_stats["total_out"]
         )
-
         a1_ref_stats = get_camera_stats(conn, "A1", ref_date_start, ref_date_end)
         a2_ref_stats = get_camera_stats(conn, "A2", ref_date_start, ref_date_end)
         a3_ref_stats = get_camera_stats(conn, "A3", ref_date_start, ref_date_end)
         a6_ref_stats = get_camera_stats(conn, "A6", ref_date_start, ref_date_end)
-
         second_floor_ref_in = (
             a1_ref_stats["total_in"]
             + a2_ref_stats["total_in"]
             + a3_ref_stats["total_in"]
             + a6_ref_stats["total_in"]
         )
-
         if second_floor_in < 0:
             second_floor_in = 0
-
         if second_floor_ref_in < 0:
             second_floor_ref_in = 0
-
         second_floor_percent = calculate_percentage_change(
             second_floor_in, second_floor_ref_in
         )
-
         if second_floor_in == 0:
             second_floor_gender = {"male": 0, "female": 0, "unknown": 0}
         else:
@@ -388,7 +309,6 @@ def get_dashboard_data():
                 a6_stats["female_percent"],
                 a6_stats["unknown_percent"],
             )
-
             second_floor_gender = {
                 "male": a1_gender["male"]
                 + a2_gender["male"]
@@ -403,32 +323,23 @@ def get_dashboard_data():
                 + a3_gender["unknown"]
                 + a6_gender["unknown"],
             }
-
         a5_stats = get_camera_stats(conn, "A5", date_start, date_end)
         canteen_value_in = a4_stats["total_in"] + a5_stats["total_in"]
         canteen_value_out = a4_stats["total_out"] + a5_stats["total_out"]
-
         a4_ref_stats = get_camera_stats(conn, "A4", ref_date_start, ref_date_end)
         a5_ref_stats = get_camera_stats(conn, "A5", ref_date_start, ref_date_end)
-
         canteen_value_ref_in = a4_ref_stats["total_in"] + a5_ref_stats["total_in"]
-
         if canteen_value_in < 0:
             canteen_value_in = 0
-
         if canteen_value_ref_in < 0:
             canteen_value_ref_in = 0
-
         if canteen_value_in > second_floor_in:
             canteen_value_in = second_floor_in
-
         if canteen_value_ref_in > second_floor_ref_in:
             canteen_value_ref_in = second_floor_ref_in
-
         canteen_percent = calculate_percentage_change(
             canteen_value_in, canteen_value_ref_in
         )
-
         if canteen_value_in == 0:
             canteen_gender = {"male": 0, "female": 0, "unknown": 0}
         else:
@@ -444,25 +355,19 @@ def get_dashboard_data():
                 a5_stats["female_percent"],
                 a5_stats["unknown_percent"],
             )
-
             canteen_gender = {
                 "male": a4_gender["male"] + a5_gender["male"],
                 "female": a4_gender["female"] + a5_gender["female"],
                 "unknown": a4_gender["unknown"] + a5_gender["unknown"],
             }
-
         total_stats = get_camera_stats(conn, None, date_start, date_end)
         total_value_in = total_stats["total_in"]
-
         total_ref_stats = get_camera_stats(conn, None, ref_date_start, ref_date_end)
         total_ref_value_in = total_ref_stats["total_in"]
-
         if total_value_in < 0:
             total_value_in = 0
-
         if total_ref_value_in < 0:
             total_ref_value_in = 0
-
         if total_value_in == 0:
             total_gender = {"male": 0, "female": 0, "unknown": 0}
             total_minor_in = 0
@@ -477,9 +382,7 @@ def get_dashboard_data():
                 total_female_percent,
                 total_unknown_percent,
             )
-
             total_minor_in = int(float(total_minor_percent) / 100.0 * total_value_in)
-
         if total_ref_value_in == 0:
             total_ref_gender = {"male": 0, "female": 0, "unknown": 0}
             total_ref_minor_in = 0
@@ -494,11 +397,9 @@ def get_dashboard_data():
                 total_ref_female_percent,
                 total_ref_unknown_percent,
             )
-
             total_ref_minor_in = int(
                 float(total_ref_minor_percent) / 100.0 * total_ref_value_in
             )
-
         male_percent_change = calculate_percentage_change(
             total_gender["male"], total_ref_gender["male"]
         )
@@ -508,11 +409,9 @@ def get_dashboard_data():
         unknown_percent_change = calculate_percentage_change(
             total_gender["unknown"], total_ref_gender["unknown"]
         )
-
         minor_percent_change = calculate_percentage_change(
             total_minor_in, total_ref_minor_in
         )
-
         return jsonify(
             {
                 "part1": {
@@ -591,17 +490,13 @@ def get_dashboard_data():
     finally:
         cur.close()
         conn.close()
-
-
 @app.route("/api/footfall-distribution", methods=["GET"])
 @login_required
 def get_footfall_distribution():
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-
         today = date.today()
-
         weekly_current_days = [(today - timedelta(days=i)) for i in range(6, -1, -1)]
         weekly_current = {"male": [], "female": [], "children": [], "unknown": []}
         for d in weekly_current_days:
@@ -620,7 +515,6 @@ def get_footfall_distribution():
                 (d,),
             )
             row = cur.fetchone()
-
             total_people = row[0]
             total_in = row[1]
             if total_people > 0:
@@ -633,12 +527,10 @@ def get_footfall_distribution():
                 female_percent = 0
                 children_percent = 0
                 unknown_percent = 0
-
             weekly_current["male"].append(int(total_in * male_percent))
             weekly_current["female"].append(int(total_in * female_percent))
             weekly_current["children"].append(int(total_in * children_percent))
             weekly_current["unknown"].append(int(total_in * unknown_percent))
-
         last_week_start = today - timedelta(days=today.weekday() + 7)
         last_week_days = [(last_week_start + timedelta(days=i)) for i in range(7)]
         weekly_historical = {"male": [], "female": [], "children": [], "unknown": []}
@@ -658,7 +550,6 @@ def get_footfall_distribution():
                 (d,),
             )
             row = cur.fetchone()
-
             total_people = row[0]
             total_in = row[1]
             if total_people > 0:
@@ -671,17 +562,14 @@ def get_footfall_distribution():
                 female_percent = 0
                 children_percent = 0
                 unknown_percent = 0
-
             weekly_historical["male"].append(int(total_in * male_percent))
             weekly_historical["female"].append(int(total_in * female_percent))
             weekly_historical["children"].append(int(total_in * children_percent))
             weekly_historical["unknown"].append(int(total_in * unknown_percent))
-
         monthly_current = {"male": [], "female": [], "children": [], "unknown": []}
         for i in range(3, -1, -1):
             week_start = today - timedelta(days=today.weekday() + (7 * i))
             week_end = week_start + timedelta(days=6)
-
             cur.execute(
                 """
                 SELECT 
@@ -697,7 +585,6 @@ def get_footfall_distribution():
                 (week_start, week_end),
             )
             row = cur.fetchone()
-
             total_people = row[0]
             total_in = row[1]
             if total_people > 0:
@@ -710,17 +597,14 @@ def get_footfall_distribution():
                 female_percent = 0
                 children_percent = 0
                 unknown_percent = 0
-
             monthly_current["male"].append(int(total_in * male_percent))
             monthly_current["female"].append(int(total_in * female_percent))
             monthly_current["children"].append(int(total_in * children_percent))
             monthly_current["unknown"].append(int(total_in * unknown_percent))
-
         monthly_historical = {"male": [], "female": [], "children": [], "unknown": []}
         for i in range(4, 0, -1):
             week_start = today - timedelta(days=today.weekday() + (7 * i))
             week_end = week_start + timedelta(days=6)
-
             cur.execute(
                 """
                 SELECT 
@@ -736,7 +620,6 @@ def get_footfall_distribution():
                 (week_start, week_end),
             )
             row = cur.fetchone()
-
             total_people = row[0]
             total_in = row[1]
             if total_people > 0:
@@ -749,18 +632,15 @@ def get_footfall_distribution():
                 female_percent = 0
                 children_percent = 0
                 unknown_percent = 0
-
             monthly_historical["male"].append(int(total_in * male_percent))
             monthly_historical["female"].append(int(total_in * female_percent))
             monthly_historical["children"].append(int(total_in * children_percent))
             monthly_historical["unknown"].append(int(total_in * unknown_percent))
-
         quarterly_current = {"male": [], "female": [], "children": [], "unknown": []}
         for i in range(2, -1, -1):
             month_date = today.replace(day=1) - timedelta(days=30 * i)
             year = month_date.year
             mon = month_date.month
-
             cur.execute(
                 """
                 SELECT 
@@ -776,7 +656,6 @@ def get_footfall_distribution():
                 (year, mon),
             )
             row = cur.fetchone()
-
             total_people = row[0]
             total_in = row[1]
             if total_people > 0:
@@ -789,18 +668,15 @@ def get_footfall_distribution():
                 female_percent = 0
                 children_percent = 0
                 unknown_percent = 0
-
             quarterly_current["male"].append(int(total_in * male_percent))
             quarterly_current["female"].append(int(total_in * female_percent))
             quarterly_current["children"].append(int(total_in * children_percent))
             quarterly_current["unknown"].append(int(total_in * unknown_percent))
-
         quarterly_historical = {"male": [], "female": [], "children": [], "unknown": []}
         for i in range(3, 0, -1):
             month_date = today.replace(day=1) - timedelta(days=30 * i)
             year = month_date.year
             mon = month_date.month
-
             cur.execute(
                 """
                 SELECT 
@@ -816,7 +692,6 @@ def get_footfall_distribution():
                 (year, mon),
             )
             row = cur.fetchone()
-
             total_people = row[0]
             total_in = row[1]
             if total_people > 0:
@@ -829,17 +704,14 @@ def get_footfall_distribution():
                 female_percent = 0
                 children_percent = 0
                 unknown_percent = 0
-
             quarterly_historical["male"].append(int(total_in * male_percent))
             quarterly_historical["female"].append(int(total_in * female_percent))
             quarterly_historical["children"].append(int(total_in * children_percent))
             quarterly_historical["unknown"].append(int(total_in * unknown_percent))
-
         yearly_current = {"male": [], "female": [], "children": [], "unknown": []}
         for i in range(3, -1, -1):
             q_year = today.year - ((today.month - 1) // 3 < i)
             q_num = ((today.month - 1) // 3 - i) % 4 + 1
-
             cur.execute(
                 """
                 SELECT 
@@ -855,7 +727,6 @@ def get_footfall_distribution():
                 (q_year, q_num),
             )
             row = cur.fetchone()
-
             total_people = row[0]
             total_in = row[1]
             if total_people > 0:
@@ -868,17 +739,14 @@ def get_footfall_distribution():
                 female_percent = 0
                 children_percent = 0
                 unknown_percent = 0
-
             yearly_current["male"].append(int(total_in * male_percent))
             yearly_current["female"].append(int(total_in * female_percent))
             yearly_current["children"].append(int(total_in * children_percent))
             yearly_current["unknown"].append(int(total_in * unknown_percent))
-
         yearly_historical = {"male": [], "female": [], "children": [], "unknown": []}
         for i in range(4, 0, -1):
             q_year = today.year - ((today.month - 1) // 3 < i)
             q_num = ((today.month - 1) // 3 - i) % 4 + 1
-
             cur.execute(
                 """
                 SELECT 
@@ -894,7 +762,6 @@ def get_footfall_distribution():
                 (q_year, q_num),
             )
             row = cur.fetchone()
-
             total_people = row[0]
             total_in = row[1]
             if total_people > 0:
@@ -907,12 +774,10 @@ def get_footfall_distribution():
                 female_percent = 0
                 children_percent = 0
                 unknown_percent = 0
-
             yearly_historical["male"].append(int(total_in * male_percent))
             yearly_historical["female"].append(int(total_in * female_percent))
             yearly_historical["children"].append(int(total_in * children_percent))
             yearly_historical["unknown"].append(int(total_in * unknown_percent))
-
         part12 = {
             "weekly_current": weekly_current,
             "weekly_historical": weekly_historical,
@@ -929,37 +794,27 @@ def get_footfall_distribution():
     finally:
         cur.close()
         conn.close()
-
-
 @app.route("/api/register", methods=["POST"])
 def register():
     data = request.json
     username = data.get("username")
     password = data.get("password")
     admin_password = data.get("adminPassword")
-
     if not username or not password or not admin_password:
         return jsonify({"error": "All fields are required."}), 400
-
     conn = get_db_connection()
     cur = conn.cursor()
-
     try:
-
         cur.execute("SELECT password_hash FROM users WHERE role = 'admin' LIMIT 1")
         admin_password_hash = cur.fetchone()
-
         if not admin_password_hash:
             return jsonify({"error": "Admin password not found."}), 500
-
         hashed_admin_password = hashlib.sha256(admin_password.encode()).hexdigest()
         if hashed_admin_password != admin_password_hash[0]:
             return jsonify({"error": "Invalid admin password."}), 403
-
         cur.execute("SELECT id FROM users WHERE username = %s", (username,))
         if cur.fetchone():
             return jsonify({"error": "User already exists."}), 409
-
         if len(username) < 3 or len(username) > 20:
             return (
                 jsonify(
@@ -967,7 +822,6 @@ def register():
                 ),
                 400,
             )
-
         if len(password) < 6 or len(password) > 20:
             return (
                 jsonify(
@@ -975,7 +829,6 @@ def register():
                 ),
                 400,
             )
-
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         cur.execute(
             """
@@ -985,7 +838,6 @@ def register():
             (username, hashed_password),
         )
         conn.commit()
-
         return jsonify({"message": "User registered successfully."}), 201
     except Exception as e:
         conn.rollback()
@@ -993,14 +845,11 @@ def register():
     finally:
         cur.close()
         conn.close()
-
-
 @app.route("/api/admin-login", methods=["POST"])
 def admin_login():
     data = request.json
     username = data.get("username")
     password = data.get("password")
-
     if not username or not password:
         return (
             jsonify(
@@ -1008,33 +857,26 @@ def admin_login():
             ),
             400,
         )
-
     conn = get_db_connection()
     cur = conn.cursor()
-
     try:
-
         cur.execute(
             "SELECT id, password_hash, role FROM users WHERE username = %s",
             (username,),
         )
         user = cur.fetchone()
-
         if not user:
             return (
                 jsonify({"success": False, "message": "Invalid username or password."}),
                 401,
             )
-
         user_id, password_hash, role = user
-
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         if hashed_password != password_hash:
             return (
                 jsonify({"success": False, "message": "Invalid username or password."}),
                 401,
             )
-
         if role != "admin":
             return (
                 jsonify(
@@ -1045,37 +887,29 @@ def admin_login():
                 ),
                 403,
             )
-
         session["user_id"] = user_id
         session["username"] = username
         session["role"] = role
         session["logged_in"] = True
-
         return jsonify({"success": True, "role": role})
     except Exception as e:
         return jsonify({"success": False, "message": "An error occurred."}), 500
     finally:
         cur.close()
         conn.close()
-
-
 @app.route("/admin", methods=["GET"])
 @login_required
 def admin_page():
     if session.get("role") != "admin":
         return jsonify({"error": "Access denied"}), 403
     return send_from_directory(app.static_folder, "admin.html")
-
-
 @app.route("/api/admin/users", methods=["GET"])
 @login_required
 def get_users():
     if session.get("role") != "admin":
         return jsonify({"error": "Access denied"}), 403
-
     conn = get_db_connection()
     cur = conn.cursor()
-
     try:
         cur.execute("SELECT id, username, role, last_login FROM users order by id")
         users = [
@@ -1095,66 +929,53 @@ def get_users():
     finally:
         cur.close()
         conn.close()
-
-
 @app.route("/api/admin/users/<int:user_id>", methods=["PUT"])
 @login_required
 def update_user(user_id):
     current_user_id = session.get("user_id")
     if user_id == current_user_id:
         return jsonify({"error": "You cannot modify your own account."}), 403
-
     data = request.json
     new_username = data.get("username")
     new_role = data.get("role")
     new_password = data.get("password")
-
     if new_role not in ["admin", "user"]:
         return jsonify({"error": "Invalid role."}), 400
-
     conn = get_db_connection()
     cur = conn.cursor()
-
     if new_username and (len(new_username) < 3 or len(new_username) > 20):
         return (
             jsonify({"error": "Username must be between 3 and 20 characters long."}),
             400,
         )
-
     if new_password and (len(new_password) < 6 or len(new_password) > 20):
         return (
             jsonify({"error": "Password must be between 6 and 20 characters long."}),
             400,
         )
-
     try:
-
         cur.execute(
             "SELECT id FROM users WHERE username = %s AND id != %s",
             (new_username, user_id),
         )
         if cur.fetchone():
             return jsonify({"error": "Username already exists."}), 400
-
         if new_username:
             cur.execute(
                 "UPDATE users SET username = %s WHERE id = %s",
                 (new_username, user_id),
             )
-
         if new_password:
             password_hash = hashlib.sha256(new_password.encode()).hexdigest()
             cur.execute(
                 "UPDATE users SET password_hash = %s WHERE id = %s",
                 (password_hash, user_id),
             )
-
         if new_role:
             cur.execute(
                 "UPDATE users SET role = %s WHERE id = %s",
                 (new_role, user_id),
             )
-
         conn.commit()
         return jsonify({"success": True})
     except Exception as e:
@@ -1163,18 +984,14 @@ def update_user(user_id):
     finally:
         cur.close()
         conn.close()
-
-
 @app.route("/api/admin/users/<int:user_id>", methods=["DELETE"])
 @login_required
 def delete_user(user_id):
     current_user_id = session.get("user_id")
     if user_id == current_user_id:
         return jsonify({"error": "You cannot delete your own account."}), 403
-
     conn = get_db_connection()
     cur = conn.cursor()
-
     try:
         cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
         conn.commit()
@@ -1185,12 +1002,8 @@ def delete_user(user_id):
     finally:
         cur.close()
         conn.close()
-
-
 @app.route("/.well-known/appspecific/com.chrome.devtools.json", methods=["GET"])
 def handle_chrome_devtools():
     return jsonify({"message": "Not Found"}), 404
-
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5050, debug=True)
